@@ -52,6 +52,6 @@ def db_session(engine):
 async def client(db_session):
     app.dependency_overrides[get_session] = lambda: db_session
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(transport=transport, base_url="https://test") as ac:
         yield ac
     app.dependency_overrides.clear()

@@ -2,13 +2,14 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. Only the backend foundation exists so far — no auth, no receipt upload/OCR, no frontend.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. Backend foundation and JWT auth are in place; receipt upload/OCR and the frontend are not yet built.
 
 ## Tech Stack
 
 - **Frontend:** Next.js (TypeScript) + TailwindCSS + shadcn/ui
 - **Backend:** FastAPI (Python 3.14, managed with [uv](https://docs.astral.sh/uv/))
 - **Database:** PostgreSQL 18, SQLModel, Alembic migrations
+- **Auth:** Custom JWT (FastAPI + bcrypt), access + refresh tokens
 - **OCR:** Tesseract initially, possibly LLM-based extraction later
 
 ## Getting Started
@@ -34,6 +35,8 @@ uv run uvicorn backend.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000`, with a health check at `/health`.
+
+Interactive API docs (Swagger UI) are at `http://localhost:8000/docs` — use them to explore/try out endpoints, e.g. authorize with a bearer token from `/auth/register` or `/auth/login` to call protected routes like `/auth/me`.
 
 ## Development
 
