@@ -1,0 +1,45 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Cedric Kawczynski", email = "kaw.cedric@web.de" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.19.1",
+    "fastapi>=0.141.1",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.15.0",
+    "sqlmodel>=0.0.39",
+    "uvicorn[standard]>=0.52.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Security",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
