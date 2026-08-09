@@ -39,7 +39,7 @@ describe("LoginPage", () => {
       getForm().getByRole("button", { name: "Log in" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("tab", { name: "Create account" }));
 
     // the switch-prompt at the bottom of the form only reads this way in register mode
     expect(screen.getByText("Already have an account?")).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe("LoginPage", () => {
 
     const user = userEvent.setup();
     render(<LoginPage />);
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("tab", { name: "Create account" }));
     await user.type(screen.getByLabelText("Email"), "user@test.com");
     await user.type(screen.getByLabelText("Password"), "hunter22");
     await user.click(

@@ -10,16 +10,23 @@ import {
   ViewOffIcon,
   AlertCircleIcon,
   CheckmarkCircle02Icon,
-  Loading03Icon,
   Invoice01Icon,
 } from "@hugeicons/core-free-icons";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError, login, register, setAccessToken } from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 type Mode = "login" | "register";
 
@@ -72,183 +79,132 @@ export default function LoginPage() {
     <div className="flex min-h-screen w-full items-center justify-center bg-secondary p-6">
       <div className="flex w-full max-w-sm flex-col gap-5">
         <div className="flex flex-col items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-[9px] bg-primary">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary">
             <HugeiconsIcon
               icon={Invoice01Icon}
-              size={16}
               className="text-primary-foreground"
             />
           </div>
-          <div className="text-[15px] font-semibold tracking-tight text-foreground">
+          <div className="text-sm font-semibold tracking-tight text-foreground">
             SmartReceipts
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-[14px] border border-border bg-card p-5 shadow-sm">
-          <div className="flex gap-0.5 rounded-[9px] bg-muted p-[3px]">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={cn(
-                "h-[26px] flex-1 rounded-[7px] text-xs font-medium transition-colors",
-                isLogin
-                  ? "bg-background text-foreground shadow-sm"
-                  : "bg-transparent text-muted-foreground",
-              )}
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <Tabs
+              value={mode}
+              onValueChange={(value) => switchMode(value as Mode)}
             >
-              Log in
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("register")}
-              className={cn(
-                "h-[26px] flex-1 rounded-[7px] text-xs font-medium transition-colors",
-                !isLogin
-                  ? "bg-background text-foreground shadow-sm"
-                  : "bg-transparent text-muted-foreground",
-              )}
-            >
-              Create account
-            </button>
-          </div>
+              <TabsList className="w-full">
+                <TabsTrigger value="login">Log in</TabsTrigger>
+                <TabsTrigger value="register">Create account</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-          {showSuccess ? (
-            <div className="flex flex-col items-center gap-2.5 px-1 pt-5 pb-2">
-              <div className="flex size-[34px] items-center justify-center rounded-full bg-foreground/8">
-                <HugeiconsIcon
-                  icon={CheckmarkCircle02Icon}
-                  size={18}
-                  className="text-foreground"
-                />
-              </div>
-              <div className="text-[13px] font-semibold text-foreground">
-                {isLogin ? "Signed in" : "Account created"}
-              </div>
-              <div className="text-center text-xs leading-relaxed text-muted-foreground">
-                Redirecting you to your receipts…
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-              {errorMessage && (
-                <div className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-2.5 py-2">
+            {showSuccess ? (
+              <div className="flex flex-col items-center gap-2.5 px-1 pt-5 pb-2">
+                <div className="flex size-9 items-center justify-center rounded-full bg-foreground/8">
                   <HugeiconsIcon
-                    icon={AlertCircleIcon}
-                    size={14}
-                    className="mt-px shrink-0 text-destructive"
-                  />
-                  <span className="text-xs leading-relaxed text-destructive">
-                    {errorMessage}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="email"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Email
-                </Label>
-                <div className="relative flex items-center">
-                  <HugeiconsIcon
-                    icon={Mail01Icon}
-                    size={15}
-                    className="pointer-events-none absolute left-2.5 text-muted-foreground"
-                  />
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="h-[34px] pl-8"
+                    icon={CheckmarkCircle02Icon}
+                    className="text-foreground"
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="password"
-                  className="text-xs font-medium text-foreground"
-                >
-                  Password
-                </Label>
-                <div className="relative flex items-center">
-                  <HugeiconsIcon
-                    icon={LockPasswordIcon}
-                    size={15}
-                    className="pointer-events-none absolute left-2.5 text-muted-foreground"
-                  />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-[34px] pr-8 pl-8"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label="Toggle password visibility"
-                    className="absolute right-1.5 flex size-6 items-center justify-center rounded-md text-muted-foreground"
-                  >
-                    <HugeiconsIcon
-                      icon={showPassword ? ViewOffIcon : ViewIcon}
-                      size={15}
-                    />
-                  </button>
+                <div className="text-sm font-semibold text-foreground">
+                  {isLogin ? "Signed in" : "Account created"}
+                </div>
+                <div className="text-center text-xs text-muted-foreground">
+                  Redirecting you to your receipts…
                 </div>
               </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="mt-0.5 h-[34px] w-full gap-1.5 text-[13px]"
-              >
-                {isLoading && (
-                  <HugeiconsIcon
-                    icon={Loading03Icon}
-                    size={13}
-                    className="animate-spin"
-                  />
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+                {errorMessage && (
+                  <Alert variant="destructive">
+                    <HugeiconsIcon icon={AlertCircleIcon} />
+                    <AlertDescription>{errorMessage}</AlertDescription>
+                  </Alert>
                 )}
-                {isLoading
-                  ? isLogin
-                    ? "Signing in…"
-                    : "Creating account…"
-                  : isLogin
-                    ? "Log in"
-                    : "Create account"}
-              </Button>
 
-              <div className="text-center text-xs text-muted-foreground">
-                {isLogin
-                  ? "Don't have an account?"
-                  : "Already have an account?"}{" "}
-                <button
-                  type="button"
-                  onClick={() => switchMode(isLogin ? "register" : "login")}
-                  className="font-medium text-foreground underline underline-offset-2"
-                >
-                  {isLogin ? "Sign up" : "Log in"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <HugeiconsIcon icon={Mail01Icon} />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </InputGroup>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <HugeiconsIcon icon={LockPasswordIcon} />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        size="icon-xs"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label="Toggle password visibility"
+                      >
+                        <HugeiconsIcon
+                          icon={showPassword ? ViewOffIcon : ViewIcon}
+                        />
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </div>
+
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading && <Spinner />}
+                  {isLoading
+                    ? isLogin
+                      ? "Signing in…"
+                      : "Creating account…"
+                    : isLogin
+                      ? "Log in"
+                      : "Create account"}
+                </Button>
+
+                <div className="text-center text-xs text-muted-foreground">
+                  {isLogin
+                    ? "Don't have an account?"
+                    : "Already have an account?"}{" "}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="xs"
+                    className="h-auto p-0 text-foreground"
+                    onClick={() => switchMode(isLogin ? "register" : "login")}
+                  >
+                    {isLogin ? "Sign up" : "Log in"}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="text-[11px] text-muted-foreground"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={toggleTheme}>
             {dark ? "Switch to light" : "Switch to dark"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

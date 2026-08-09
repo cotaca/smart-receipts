@@ -11,8 +11,22 @@ import {
   ChevronDownIcon,
 } from "@hugeicons/core-free-icons";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/hooks/use-theme";
 import { getMe, logout, refresh, setAccessToken, type Me } from "@/lib/api";
 
@@ -62,104 +76,88 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="flex h-[52px] flex-none items-center justify-between border-b border-border bg-background px-5">
+      <header className="flex h-13 flex-none items-center justify-between border-b border-border bg-background px-5">
         <div className="flex items-center gap-2">
           <div className="flex size-6 items-center justify-center rounded-md bg-primary">
             <HugeiconsIcon
               icon={Invoice01Icon}
-              size={14}
               className="text-primary-foreground"
             />
           </div>
-          <span className="text-[13.5px] font-semibold tracking-tight text-foreground">
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             SmartReceipts
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="h-[26px] rounded-md px-2 text-[11px] text-muted-foreground"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={toggleTheme}>
             {dark ? "Light" : "Dark"}
-          </button>
-          <div className="mx-1 h-4 w-px bg-border" />
-          <div className="flex size-6 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
-            {initials}
-          </div>
-          <button
+          </Button>
+          <Separator orientation="vertical" className="mx-1 h-4" />
+          <Avatar size="sm">
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={handleSignOut}
             aria-label="Sign out"
-            className="flex size-[26px] items-center justify-center rounded-md text-muted-foreground"
           >
-            <HugeiconsIcon icon={Logout01Icon} size={14} />
-          </button>
+            <HugeiconsIcon icon={Logout01Icon} />
+          </Button>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[960px] flex-1 flex-col gap-5 px-8 py-7">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-8 py-7">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-[19px] font-semibold tracking-tight text-foreground">
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
               Receipts
             </h1>
-            <p className="text-[12.5px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Track and analyze your expenses
             </p>
           </div>
-          <Button className="h-8 gap-1.5 px-3 text-[12.5px]">
-            <HugeiconsIcon icon={Upload04Icon} size={14} />
+          <Button size="lg">
+            <HugeiconsIcon icon={Upload04Icon} />
             Upload receipt
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-[10px] border border-border bg-secondary p-2 opacity-60">
-          <div className="relative flex max-w-[260px] flex-1 items-center">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              size={13}
-              className="pointer-events-none absolute left-2 text-muted-foreground"
-            />
-            <Input
-              disabled
-              placeholder="Search receipts…"
-              className="h-[26px] pl-6.5 text-xs"
-            />
-          </div>
-          <div className="flex h-[26px] items-center gap-1 rounded-md border border-input px-2.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary p-2 opacity-60">
+          <InputGroup className="max-w-65 flex-1">
+            <InputGroupAddon>
+              <HugeiconsIcon icon={Search01Icon} />
+            </InputGroupAddon>
+            <InputGroupInput disabled placeholder="Search receipts…" />
+          </InputGroup>
+          <Button variant="outline" size="sm" disabled>
             This month
-            <HugeiconsIcon icon={ChevronDownIcon} size={11} />
-          </div>
-          <div className="ml-auto flex h-[26px] items-center gap-1 rounded-md border border-input px-2.5 text-xs text-muted-foreground">
+            <HugeiconsIcon icon={ChevronDownIcon} />
+          </Button>
+          <Button variant="outline" size="sm" disabled className="ml-auto">
             Sort: Newest
-            <HugeiconsIcon icon={ChevronDownIcon} size={11} />
-          </div>
+            <HugeiconsIcon icon={ChevronDownIcon} />
+          </Button>
         </div>
 
-        <div className="flex flex-1 items-center justify-center rounded-[14px] border border-dashed border-border bg-secondary px-6 py-14">
-          <div className="flex max-w-70 flex-col items-center gap-3.5 text-center">
-            <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-background">
-              <HugeiconsIcon
-                icon={Invoice01Icon}
-                size={22}
-                className="text-muted-foreground"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="text-sm font-semibold text-foreground">
-                No receipts yet
-              </div>
-              <div className="text-[12.5px] leading-relaxed text-muted-foreground">
-                Upload a receipt to start tracking your expenses automatically.
-              </div>
-            </div>
-            <Button className="h-8 gap-1.5 px-3.5 text-[12.5px]">
-              <HugeiconsIcon icon={Upload04Icon} size={14} />
+        <Empty className="flex-1 border border-dashed border-border bg-secondary">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <HugeiconsIcon icon={Invoice01Icon} />
+            </EmptyMedia>
+            <EmptyTitle>No receipts yet</EmptyTitle>
+            <EmptyDescription>
+              Upload a receipt to start tracking your expenses automatically.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button>
+              <HugeiconsIcon icon={Upload04Icon} />
               Upload your first receipt
             </Button>
-          </div>
-        </div>
+          </EmptyContent>
+        </Empty>
       </main>
     </div>
   );
