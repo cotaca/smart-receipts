@@ -18,6 +18,7 @@ if config.config_file_name is not None:
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # import model modules here so their tables register on SQLModel.metadata
+from backend.models.receipt import Receipt  # noqa: F401
 from backend.models.user import User  # noqa: F401
 
 target_metadata = SQLModel.metadata

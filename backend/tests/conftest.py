@@ -11,6 +11,7 @@ from sqlmodel import Session, create_engine
 from backend.core.config import settings
 from backend.core.db import get_session
 from backend.main import app
+from backend.services.storage import LocalStorageBackend, get_storage_backend
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -48,9 +49,15 @@ def db_session(engine):
     connection.close()
 
 
+@pytest.fixture
+def storage_backend(tmp_path):
+    return LocalStorageBackend(tmp_path / "receipts")
+
+
 @pytest_asyncio.fixture
-async def client(db_session):
+async def client(db_session, storage_backend):
     app.dependency_overrides[get_session] = lambda: db_session
+    app.dependency_overrides[get_storage_backend] = lambda: storage_backend
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="https://test") as ac:
         yield ac

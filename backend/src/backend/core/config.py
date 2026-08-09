@@ -14,5 +14,8 @@ class Settings(BaseSettings):
 
     frontend_origin: str
 
+    storage_backend: str = "local"
+    storage_local_path: str = "storage/receipts"
+
 
 settings = Settings()
