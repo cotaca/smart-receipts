@@ -2,7 +2,7 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. Backend foundation and JWT auth are in place; receipt upload/OCR and the frontend are not yet built.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. Backend foundation, JWT auth, and a frontend skeleton (connected to the API, no UI features yet) are in place; receipt upload/OCR and auth UI are not yet built.
 
 ## Tech Stack
 
@@ -18,7 +18,7 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 
 - [Docker](https://www.docker.com/)
 - [uv](https://docs.astral.sh/uv/)
-- Node.js (for the frontend, once scaffolded)
+- [Node.js](https://nodejs.org/en)
 
 ### Setup
 
@@ -32,29 +32,41 @@ cd backend
 uv sync
 uv run alembic upgrade head
 uv run uvicorn backend.main:app --reload
+
+# 3. Frontend (separate terminal)
+cd frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
 ```
 
-The API will be available at `http://localhost:8000`, with a health check at `/health`.
+The API will be available at `http://localhost:8000`, with a health check at `/health`. The frontend runs at `http://localhost:3000` and calls the API via `NEXT_PUBLIC_API_URL`.
 
 Interactive API docs (Swagger UI) are at `http://localhost:8000/docs` — use them to explore/try out endpoints, e.g. authorize with a bearer token from `/auth/register` or `/auth/login` to call protected routes like `/auth/me`.
 
 ## Development
 
 ```bash
-# Run tests
+# Backend
 uv run pytest
+uv run ruff check --fix . && uv run ruff format .
 
-# Lint & format
-uv run ruff check --fix .
-uv run ruff format .
+# Frontend
+npm run test
+npm run lint:fix && npm run format
+npm run typecheck
 ```
 
-CI (GitHub Actions) runs lint, migrations, and tests on every change under `backend/`.
+CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend/`, lint + typecheck + tests for `frontend/`.
 
 ## Project Structure
 
 ```
 /frontend    Next.js app (TypeScript, App Router)
+  /src
+    /app         Routes (App Router)
+    /components  React components (/ui = shadcn-generated)
+    /lib         api.ts (fetch wrapper), utils.ts (cn helper)
 /backend     FastAPI app (uv project, src layout)
   /src/backend
     /core        settings, DB engine/session

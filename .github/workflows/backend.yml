@@ -39,6 +39,7 @@ jobs:
       TEST_DATABASE_URL: postgresql+psycopg://smart_receipts:smart_receipts@localhost:5432/smart_receipts_test
       # CI-only value: signs tokens within this throwaway run/DB, protects nothing real.
       JWT_SECRET_KEY: ci-test-secret-key-not-for-production-use
+      FRONTEND_ORIGIN: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
