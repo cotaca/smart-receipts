@@ -2,7 +2,7 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. Backend foundation, JWT auth, and a frontend skeleton (connected to the API, no UI features yet) are in place; receipt upload/OCR and auth UI are not yet built.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. Backend foundation, JWT auth (backend + a working login/register UI), and a receipts-page shell are in place; receipt upload/OCR is not yet built.
 
 ## Tech Stack
 
@@ -64,9 +64,10 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
 ```
 /frontend    Next.js app (TypeScript, App Router)
   /src
-    /app         Routes (App Router)
+    /app         Routes: / (receipts shell), /login (login + register)
     /components  React components (/ui = shadcn-generated)
-    /lib         api.ts (fetch wrapper), utils.ts (cn helper)
+    /hooks       useTheme (dark mode)
+    /lib         api.ts (fetch wrapper + auth calls), utils.ts (cn helper)
 /backend     FastAPI app (uv project, src layout)
   /src/backend
     /core        settings, DB engine/session
