@@ -124,7 +124,7 @@ export default function HomePage() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary p-2 opacity-60">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted p-2 opacity-60">
           <InputGroup className="max-w-65 flex-1">
             <InputGroupAddon>
               <HugeiconsIcon icon={Search01Icon} />
@@ -141,7 +141,7 @@ export default function HomePage() {
           </Button>
         </div>
 
-        <Empty className="flex-1 border border-dashed border-border bg-secondary">
+        <Empty className="flex-1 border border-dashed border-border bg-muted">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <HugeiconsIcon icon={Invoice01Icon} />
