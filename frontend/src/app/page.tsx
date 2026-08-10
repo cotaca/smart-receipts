@@ -11,6 +11,16 @@ import {
   ChevronDownIcon,
 } from "@hugeicons/core-free-icons";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,14 +37,38 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ReceiptFormDialog } from "@/components/receipts/receipt-form-dialog";
+import { ReceiptsTable } from "@/components/receipts/receipts-table";
 import { useTheme } from "@/hooks/use-theme";
-import { getMe, logout, refresh, setAccessToken, type Me } from "@/lib/api";
+import {
+  deleteReceipt,
+  getMe,
+  listReceipts,
+  logout,
+  refresh,
+  setAccessToken,
+  type Me,
+  type ReceiptPublic,
+} from "@/lib/api";
 
 export default function HomePage() {
   const router = useRouter();
   const { dark, toggleTheme } = useTheme();
   const [checking, setChecking] = useState(true);
   const [me, setMe] = useState<Me | null>(null);
+
+  const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
+  const [listError, setListError] = useState(false);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState<
+    ReceiptPublic | undefined
+  >(undefined);
+  const [deletingReceipt, setDeletingReceipt] = useState<ReceiptPublic | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,12 +93,64 @@ export default function HomePage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (!me) return;
+    let cancelled = false;
+
+    listReceipts()
+      .then((data) => {
+        if (!cancelled) setReceipts(data);
+      })
+      .catch(() => {
+        if (!cancelled) setListError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [me]);
+
   async function handleSignOut() {
     try {
       await logout();
     } finally {
       setAccessToken(null);
       router.replace("/login");
+    }
+  }
+
+  function openCreateDialog() {
+    setEditingReceipt(undefined);
+    setFormOpen(true);
+  }
+
+  function openEditDialog(receipt: ReceiptPublic) {
+    setEditingReceipt(receipt);
+    setFormOpen(true);
+  }
+
+  function handleSaved(saved: ReceiptPublic) {
+    setReceipts((current) => {
+      if (!current) return [saved];
+      const exists = current.some((r) => r.id === saved.id);
+      return exists
+        ? current.map((r) => (r.id === saved.id ? saved : r))
+        : [saved, ...current];
+    });
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingReceipt) return;
+    setIsDeleting(true);
+    try {
+      await deleteReceipt(deletingReceipt.id);
+      setReceipts(
+        (current) =>
+          current?.filter((r) => r.id !== deletingReceipt.id) ?? null,
+      );
+      setDeletingReceipt(null);
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -118,7 +204,7 @@ export default function HomePage() {
               Track and analyze your expenses
             </p>
           </div>
-          <Button size="lg">
+          <Button size="lg" onClick={openCreateDialog}>
             <HugeiconsIcon icon={Upload04Icon} />
             Upload receipt
           </Button>
@@ -141,24 +227,74 @@ export default function HomePage() {
           </Button>
         </div>
 
-        <Empty className="flex-1 border border-dashed border-border bg-muted">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <HugeiconsIcon icon={Invoice01Icon} />
-            </EmptyMedia>
-            <EmptyTitle>No receipts yet</EmptyTitle>
-            <EmptyDescription>
-              Upload a receipt to start tracking your expenses automatically.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button>
-              <HugeiconsIcon icon={Upload04Icon} />
-              Upload your first receipt
-            </Button>
-          </EmptyContent>
-        </Empty>
+        {listError ? (
+          <p className="text-sm text-destructive">
+            {"Couldn't load your receipts. Please refresh the page."}
+          </p>
+        ) : receipts === null ? (
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : receipts.length === 0 ? (
+          <Empty className="flex-1 border border-dashed border-border bg-muted">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <HugeiconsIcon icon={Invoice01Icon} />
+              </EmptyMedia>
+              <EmptyTitle>No receipts yet</EmptyTitle>
+              <EmptyDescription>
+                Upload a receipt to start tracking your expenses automatically.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={openCreateDialog}>
+                <HugeiconsIcon icon={Upload04Icon} />
+                Upload your first receipt
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <ReceiptsTable
+            receipts={receipts}
+            onEdit={openEditDialog}
+            onDelete={setDeletingReceipt}
+          />
+        )}
       </main>
+
+      <ReceiptFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        receipt={editingReceipt}
+        onSaved={handleSaved}
+      />
+
+      <AlertDialog
+        open={deletingReceipt !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingReceipt(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete receipt?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`This will permanently delete the receipt from ${deletingReceipt?.merchant}. This can't be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
