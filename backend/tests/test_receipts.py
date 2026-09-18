@@ -1,4 +1,12 @@
-RECEIPT_BYTES = b"fake-jpeg-bytes"
+import io
+
+from PIL import Image
+
+from tests.images import make_image_bytes
+
+# Small enough that the preprocessing step won't downscale it, so tests that
+# care about dimensions stay independent of MAX_DIMENSION.
+RECEIPT_BYTES = make_image_bytes()
 
 
 async def _register_and_auth(
@@ -38,7 +46,7 @@ async def test_create_receipt_returns_public_data(client, storage_backend):
     assert body["notes"] == "groceries"
     assert body["original_filename"] == "receipt.jpg"
     assert body["content_type"] == "image/jpeg"
-    assert body["file_size"] == len(RECEIPT_BYTES)
+    assert body["file_size"] > 0
     assert body["image_url"] == f"/receipts/{body['id']}/image"
     assert "storage_key" not in body
 
@@ -51,6 +59,33 @@ async def test_create_receipt_rejects_unsupported_content_type(client):
         headers=headers,
         data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
         files={"file": ("receipt.txt", b"not an image", "text/plain")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_create_receipt_rejects_undecodable_image(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+
+    response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
+        files={"file": ("receipt.jpg", b"not-a-real-image", "image/jpeg")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_create_receipt_rejects_truncated_image(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    truncated = RECEIPT_BYTES[: len(RECEIPT_BYTES) // 2]
+
+    response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
+        files={"file": ("receipt.jpg", truncated, "image/jpeg")},
     )
 
     assert response.status_code == 400
@@ -173,8 +208,8 @@ async def test_get_receipt_image_returns_bytes(client):
     response = await client.get(f"/receipts/{receipt_id}/image", headers=headers)
 
     assert response.status_code == 200
-    assert response.content == RECEIPT_BYTES
     assert response.headers["content-type"] == "image/jpeg"
+    assert Image.open(io.BytesIO(response.content)).format == "JPEG"
 
 
 async def test_get_receipt_image_other_user_404(client):

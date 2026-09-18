@@ -1,7 +1,6 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from pathlib import Path
 
 from fastapi import (
     APIRouter,
@@ -13,13 +12,16 @@ from fastapi import (
     UploadFile,
     status,
 )
+from PIL.Image import DecompressionBombError
 from sqlmodel import Session, select
+from starlette.concurrency import run_in_threadpool
 
 from backend.core.db import get_session
 from backend.core.security import get_current_user
 from backend.models.receipt import Receipt
 from backend.models.user import User
 from backend.schemas.receipt import ReceiptPublic, ReceiptUpdate
+from backend.services.image_processing import ImageTooLargeError, preprocess_image
 from backend.services.storage import StorageBackend, get_storage_backend
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
@@ -77,16 +79,27 @@ async def create_receipt(
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large")
 
-    extension = Path(file.filename or "").suffix
-    storage_key = f"{current_user.id}/{uuid.uuid4()}{extension}"
-    storage.save(storage_key, content, file.content_type)
+    # Pillow is CPU-bound and this is an async route -- decoding a 12 MP photo
+    # inline would block the event loop for every other request.
+    try:
+        processed = await run_in_threadpool(preprocess_image, content)
+    # OSError covers UnidentifiedImageError plus truncated/corrupt files that
+    # pass the header check but fail to decode; the other two are Pillow's
+    # and our own explicit "reject this input" signals.
+    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Could not process image"
+        ) from exc
+
+    storage_key = f"{current_user.id}/{uuid.uuid4()}{processed.extension}"
+    storage.save(storage_key, processed.content, processed.content_type)
 
     receipt = Receipt(
         user_id=current_user.id,
         storage_key=storage_key,
         original_filename=file.filename or "receipt",
-        content_type=file.content_type,
-        file_size=len(content),
+        content_type=processed.content_type,
+        file_size=len(processed.content),
         merchant=merchant,
         amount=amount,
         currency=currency,
