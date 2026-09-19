@@ -104,15 +104,39 @@ export function logout() {
   return apiFetch<void>("/auth/logout", { method: "POST" });
 }
 
+export type NumberFormat = "de-DE" | "en-US";
+export type Currency = "EUR" | "USD" | "GBP" | "CHF";
+
 export type Me = {
   id: string;
   email: string;
   is_active: boolean;
   created_at: string;
+  number_format: NumberFormat;
+  default_currency: Currency;
 };
 
 export function getMe() {
   return apiFetch<Me>("/auth/me");
+}
+
+export function updateMe(
+  patch: Partial<Pick<Me, "number_format" | "default_currency">>,
+) {
+  return apiFetch<Me>("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return apiFetch<void>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
 }
 
 export type ReceiptPublic = {
