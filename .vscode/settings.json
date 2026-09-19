@@ -14,7 +14,29 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  "editor.linkedEditing": true,
   "python.testing.pytestArgs": ["backend"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "python.analysis.typeCheckingMode": "standard",
+  "vitest.rootConfig": "./frontend/vitest.config.mts",
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  // Tailwind v4 keeps its config in globals.css; the built-in CSS linter does
+  // not know @theme/@apply, so silence it and let the Tailwind LSP take over.
+  "css.lint.unknownAtRules": "ignore",
+  "tailwindCSS.classFunctions": ["cn", "cva"],
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/.next": true,
+    "**/__pycache__": true,
+    "**/uv.lock": true,
+    "**/package-lock.json": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/.next/**": true
+  }
 }
