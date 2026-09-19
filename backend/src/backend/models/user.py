@@ -12,3 +12,7 @@ class User(SQLModel, table=True):
     hashed_password: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    # Locale string, not a separator enum -- the frontend hands this straight
+    # to Intl.NumberFormat(number_format), no mapping table on either side.
+    number_format: str = Field(default="de-DE")
+    default_currency: str = Field(default="EUR")
