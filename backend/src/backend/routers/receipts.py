@@ -20,8 +20,9 @@ from backend.core.db import get_session
 from backend.core.security import get_current_user
 from backend.models.receipt import Receipt
 from backend.models.user import User
-from backend.schemas.receipt import ReceiptPublic, ReceiptUpdate
+from backend.schemas.receipt import ReceiptExtraction, ReceiptPublic, ReceiptUpdate
 from backend.services.image_processing import ImageTooLargeError, preprocess_image
+from backend.services.ocr import extract_receipt_data
 from backend.services.storage import StorageBackend, get_storage_backend
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
@@ -60,6 +61,16 @@ def _get_owned_receipt(
     return receipt
 
 
+async def _read_upload(file: UploadFile) -> bytes:
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported image type")
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large")
+    return content
+
+
 @router.post("", response_model=ReceiptPublic, status_code=status.HTTP_201_CREATED)
 async def create_receipt(
     file: UploadFile = File(...),
@@ -72,12 +83,7 @@ async def create_receipt(
     current_user: User = Depends(get_current_user),
     storage: StorageBackend = Depends(get_storage_backend),
 ) -> ReceiptPublic:
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported image type")
-
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large")
+    content = await _read_upload(file)
 
     # Pillow is CPU-bound and this is an async route -- decoding a 12 MP photo
     # inline would block the event loop for every other request.
@@ -110,6 +116,31 @@ async def create_receipt(
     session.commit()
     session.refresh(receipt)
     return _to_public(receipt)
+
+
+@router.post("/extract", response_model=ReceiptExtraction)
+async def extract_receipt(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+) -> ReceiptExtraction:
+    """OCR a receipt image into form-fill suggestions -- persists nothing.
+
+    No session/storage dependency: this is a read-only preview the frontend
+    calls on file selection, before the user has confirmed any details.
+    Declared as POST /receipts/extract, so it never collides with
+    GET /receipts/{receipt_id} (different method, and there is no
+    POST /receipts/{id}).
+    """
+    content = await _read_upload(file)
+    try:
+        return await run_in_threadpool(extract_receipt_data, content)
+    # Same mapping as create_receipt. TesseractNotFoundError is deliberately
+    # not caught here -- a missing binary is an environment problem, not bad
+    # input, and should surface as a 500.
+    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Could not process image"
+        ) from exc
 
 
 @router.get("", response_model=list[ReceiptPublic])
