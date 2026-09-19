@@ -2,16 +2,18 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth, full receipt CRUD and OCR-assisted data entry are implemented end to end, backend and frontend.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth, receipt CRUD, OCR-assisted data entry and account settings are implemented end to end, backend and frontend.
 
 ## What works today
 
 - **Accounts** — register, login, logout, refresh. Access token in memory, refresh token in an httpOnly cookie.
 - **Receipts** — upload an image, edit, delete, list. Images are served through an authenticated route, never a public file mount, and you only ever see your own.
 - **Image preprocessing** — every upload is auto-rotated by its EXIF orientation, capped at 2000px on the longest edge and re-encoded to JPEG. HEIC from iPhones is accepted and converted. All metadata is stripped, so the GPS coordinates in a phone photo never reach storage.
-- **OCR extraction** — pick a receipt photo and merchant, total and purchase date are filled in for you, via Tesseract. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before.
+- **OCR extraction** — pick a receipt photo and merchant, total and purchase date are filled in for you, via Tesseract. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before. The upload dialog shows the scan next to the fields and marks each one as suggested or not detected.
+- **Search, filter, sort** — find receipts by merchant, narrow them to a period, order by date or amount. All client-side over the already-loaded list.
+- **Settings** — number format (`1.234,56` vs `1,234.56`) and default currency live on your account and follow you between devices. Theme (light/dark/system) stays per device. Password changes happen here too.
 
-Not built yet: PDF e-receipts, line-item extraction and analytics, account settings (theme, language, default currency).
+Not built yet: PDF e-receipts, line-item extraction, the analytics dashboard, i18n, deleting your account.
 
 ## Tech Stack
 
@@ -22,6 +24,7 @@ Not built yet: PDF e-receipts, line-item extraction and analytics, account setti
 - **Auth:** Custom JWT (FastAPI + bcrypt), access + refresh tokens
 - **Image processing:** Pillow + pillow-heif
 - **OCR:** Tesseract (`deu`), possibly LLM-based extraction later
+- **UI reference:** the screen designs in [`docs/ui-concept/`](docs/ui-concept/) — check there before building a screen by hand
 
 ## Getting Started
 
@@ -95,10 +98,13 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
 ```
 /frontend    Next.js app (TypeScript, App Router)
   /src
-    /app         Routes: / (receipts CRUD), /login (login + register)
-    /components  React components (/ui = shadcn-generated, /receipts = receipt feature components)
-    /hooks       useTheme (dark mode)
-    /lib         api.ts (fetch wrapper + auth/receipt calls), utils.ts (cn helper)
+    /app         /login, plus the (pages) route group — a Next.js route group, so it
+                 adds no URL segment: / (receipts), /dashboard, /settings. Everything
+                 in it shares one sidebar shell and one auth guard
+    /components  /ui = shadcn-generated, /receipts = receipt feature, /layout = sidebar shell
+    /hooks       useTheme (light/dark/system), useAuthGuard, useIsMobile
+    /lib         api.ts (fetch wrapper + API calls), me-context.tsx (current user),
+                 utils.ts (cn, formatAmount)
 /backend     FastAPI app (uv project, src layout)
   /src/backend
     /core        settings, DB engine/session
