@@ -58,10 +58,10 @@ export function ReceiptsTable({
               />
             </TableCell>
             <TableCell className="font-medium">{receipt.merchant}</TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="font-mono text-muted-foreground">
               {receipt.purchased_at}
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-right font-mono">
               {receipt.amount} {receipt.currency}
             </TableCell>
             <TableCell>
