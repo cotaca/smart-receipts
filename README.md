@@ -26,6 +26,8 @@ Not built yet: PDF e-receipts, line-item extraction, the analytics dashboard, i1
 - **OCR:** Tesseract (`deu`), possibly LLM-based extraction later
 - **UI reference:** the screen designs in [`docs/ui-concept/`](docs/ui-concept/) — check there before building a screen by hand
 
+Changing the code? [ARCHITECTURE.md](ARCHITECTURE.md) explains why it's built this way; [AGENTS.md](AGENTS.md) covers how to work in it.
+
 ## Getting Started
 
 ### Prerequisites

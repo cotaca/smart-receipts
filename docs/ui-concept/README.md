@@ -76,13 +76,13 @@ yourself is never overwritten").
 Dialog (breit: Vorschau links, Felder rechts), Alert, Badge*, Progress*, Skeleton
 (Felder während des Scans), Input, Label, Select, Textarea, Button, Spinner.
 Enthält den PDF-Zweig: „1 page · 84 KB · text layer found, no OCR needed" — deckt
-sich mit dem „Future: PDF upload"-Plan in `CLAUDE.local.md`.
+sich mit dem „Future: PDF upload"-Plan in `ARCHITECTURE.md`.
 
 ### `Screen-Detail` — Beleg-Detailansicht
 Dialog, Badge* (Bild/PDF), Button, DropdownMenu, Separator, Card, Table
 (Line-Items: Description / Qty / Unit / Total). PDF-Variante zeigt statt der
 Bildvorschau eine Datei-Kachel mit „Open PDF" / „Download" — genau der Fallback, den
-`CLAUDE.local.md` für `receipt-image.tsx` skizziert.
+`ARCHITECTURE.md` für `receipt-image.tsx` skizziert.
 
 ### `Screen-Delete` — Löschbestätigung
 AlertDialog, Button (destructive), Spinner, plus eine kleine Beleg-Vorschauzeile im

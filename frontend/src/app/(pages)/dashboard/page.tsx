@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/empty";
 
 // Placeholder — spend analytics need the planned ReceiptItem line-item table
-// (see "Future: product-level analytics" in CLAUDE.local.md) before this can
+// (see "Future: product-level analytics" in ARCHITECTURE.md) before this can
 // show anything real.
 export default function DashboardPage() {
   return (
