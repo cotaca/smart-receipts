@@ -2,7 +2,16 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth and full receipt CRUD (upload, edit, delete — manual data entry, no OCR yet) are implemented end to end, backend and frontend.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth, full receipt CRUD and OCR-assisted data entry are implemented end to end, backend and frontend.
+
+## What works today
+
+- **Accounts** — register, login, logout, refresh. Access token in memory, refresh token in an httpOnly cookie.
+- **Receipts** — upload an image, edit, delete, list. Images are served through an authenticated route, never a public file mount, and you only ever see your own.
+- **Image preprocessing** — every upload is auto-rotated by its EXIF orientation, capped at 2000px on the longest edge and re-encoded to JPEG. HEIC from iPhones is accepted and converted. All metadata is stripped, so the GPS coordinates in a phone photo never reach storage.
+- **OCR extraction** — pick a receipt photo and merchant, total and purchase date are filled in for you, via Tesseract. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before.
+
+Not built yet: PDF e-receipts, line-item extraction and analytics, account settings (theme, language, default currency).
 
 ## Tech Stack
 
@@ -11,7 +20,8 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 - **Database:** PostgreSQL 18, SQLModel, Alembic migrations
 - **Storage:** Swappable backend (local disk in dev, S3/Supabase later) behind a small `Protocol`
 - **Auth:** Custom JWT (FastAPI + bcrypt), access + refresh tokens
-- **OCR:** Tesseract initially, possibly LLM-based extraction later
+- **Image processing:** Pillow + pillow-heif
+- **OCR:** Tesseract (`deu`), possibly LLM-based extraction later
 
 ## Getting Started
 
@@ -21,44 +31,64 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 - [uv](https://docs.astral.sh/uv/)
 - [Node.js](https://nodejs.org/en)
 
+Tesseract does **not** need to be installed on your machine — it ships inside the backend image, and the test suite mocks it.
+
 ### Setup
 
 ```bash
-# 1. Start the local database
+# 1. Database
 cp .env.example .env
 docker compose up -d db
 
-# 2. Backend
+# 2. Migrations (run from the host against the mapped port)
 cd backend
 uv sync
 uv run alembic upgrade head
-uv run uvicorn backend.main:app --reload
 
-# 3. Frontend (separate terminal)
+# 3. Backend (builds the image on first run, includes Tesseract)
+cd ..
+docker compose up -d
+
+# 4. Frontend (separate terminal)
 cd frontend
 cp .env.local.example .env.local
 npm install
 npm run dev
 ```
 
-The API will be available at `http://localhost:8000`, with a health check at `/health`. The frontend runs at `http://localhost:3000` and calls the API via `NEXT_PUBLIC_API_URL`.
+The API is available at `http://localhost:8000`, with a health check at `/health`. The frontend runs at `http://localhost:3000` and calls the API via `NEXT_PUBLIC_API_URL`.
+
+The backend container bind-mounts `./backend`, so edits reload live — no rebuild for code changes. Uploaded images land in `./backend/storage/receipts/` on the host and survive a rebuild.
 
 Interactive API docs (Swagger UI) are at `http://localhost:8000/docs` — use them to explore/try out endpoints, e.g. authorize with a bearer token from `/auth/register` or `/auth/login` to call protected routes like `/auth/me`.
 
 ## Development
 
 ```bash
-# Backend
+# Backend (tests and tooling run natively, not in the container)
+cd backend
 uv run pytest
 uv run ruff check --fix . && uv run ruff format .
 
 # Frontend
+cd frontend
 npm run test
 npm run lint:fix && npm run format
 npm run typecheck
 ```
 
-CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend/`, lint + typecheck + tests for `frontend/`.
+`DATABASE_URL` in `.env` points at `localhost`, so native `pytest` and `alembic` work as usual; Compose overrides only the host for the container. You can still run the backend natively with `uv run uvicorn backend.main:app --reload` instead of the container — OCR then needs Tesseract (with the `deu` language pack) installed and on your `PATH`.
+
+Container-specific commands:
+
+```bash
+docker compose logs -f backend
+docker compose exec backend tesseract --list-langs   # should list "deu"
+docker compose up -d --build backend                 # after a dependency change
+docker compose down
+```
+
+CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend/`, lint + typecheck + tests for `frontend/`. CI does not use Compose, so it installs Tesseract via `apt` separately.
 
 ## Project Structure
 
@@ -75,8 +105,9 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
     /models      SQLModel table models
     /routers     API endpoints
     /schemas     Non-table Pydantic schemas
-    /services    Business logic (storage backend, OCR parsing, image preprocessing)
+    /services    storage.py (storage backend), image_processing.py, ocr.py
   /alembic     DB migrations
   /tests       pytest suite
+  Dockerfile   Backend image (Python 3.14 + Tesseract), used by docker-compose.yml
 /db/init     Postgres init scripts
 ```
