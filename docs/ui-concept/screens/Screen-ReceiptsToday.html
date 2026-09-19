@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;min-height:100%;box-sizing:border-box;background:var(--background);color:var(--foreground);font-family:Inter,ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased">
+  <header style="display:flex;height:52px;flex:none;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--background);padding:0 20px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:0.5rem;background:var(--primary);color:var(--primary-foreground)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v17l-2.5-1.5L15 21l-3-1.5L9 21l-2.5-1.5L4 21Z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
+      </div>
+      <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em;color:var(--foreground)">SmartReceipts</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;height:24px;align-items:center;padding:0 8px;border-radius:0.5rem;font-size:12px;font-weight:500;color:var(--foreground)">{{ themeLabel }}</div>
+      <div style="width:1px;height:16px;margin:0 4px;background:var(--border)"></div>
+      <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:9999px;background:var(--muted);box-shadow:0 0 0 1px var(--border);font-size:12px;color:var(--muted-foreground)">AN</div>
+      <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:0.5rem;color:var(--foreground)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5H9a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h5"></path><path d="M16.5 9l3 3-3 3M19.5 12h-8"></path></svg>
+      </div>
+    </div>
+  </header>
+
+  <main style="display:flex;flex:1;width:100%;max-width:896px;margin:0 auto;flex-direction:column;gap:20px;padding:28px 32px;box-sizing:border-box">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <h1 style="margin:0;font-size:18px;font-weight:600;letter-spacing:-0.02em;color:var(--foreground)">Receipts</h1>
+        <p style="margin:0;font-size:12px;line-height:1.625;color:var(--muted-foreground)">Track and analyze your expenses</p>
+      </div>
+      <div style="display:flex;height:32px;align-items:center;gap:4px;border-radius:0.5rem;background:var(--primary);color:var(--primary-foreground);padding:0 10px;font-size:12px;font-weight:500">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 7.5 12 3.5l4 4"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg>
+        <span>Upload receipt</span>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;border-radius:0.625rem;border:1px solid var(--border);background:var(--muted);padding:8px;opacity:0.6">
+      <div style="display:flex;height:28px;flex:1;max-width:260px;align-items:center;border-radius:0.5rem;border:1px solid var(--input);background:color-mix(in oklch, var(--input) 20%, transparent)">
+        <div style="display:flex;align-items:center;padding-left:8px;color:var(--muted-foreground)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        </div>
+        <div style="flex:1;padding:0 8px;font-size:12px;color:var(--muted-foreground)">Search receipts…</div>
+      </div>
+      <div style="display:flex;height:24px;align-items:center;gap:4px;border-radius:0.5rem;border:1px solid var(--border);padding:0 8px;font-size:12px;font-weight:500;color:var(--foreground)">
+        <span>This month</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
+      </div>
+      <div style="display:flex;height:24px;margin-left:auto;align-items:center;gap:4px;border-radius:0.5rem;border:1px solid var(--border);padding:0 8px;font-size:12px;font-weight:500;color:var(--foreground)">
+        <span>Sort: Newest</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
+      </div>
+    </div>
+
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="height:48px;width:100%;border-radius:0.5rem;background:var(--muted);animation:dcpulse 2s ease-in-out infinite"></div>
+        <div style="height:48px;width:100%;border-radius:0.5rem;background:var(--muted);animation:dcpulse 2s ease-in-out infinite"></div>
+        <div style="height:48px;width:100%;border-radius:0.5rem;background:var(--muted);animation:dcpulse 2s ease-in-out infinite"></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex:1;min-height:260px;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:16px;border-radius:0.875rem;border:1px dashed var(--border);background:var(--muted);padding:24px;text-align:center">
+        <div style="display:flex;max-width:384px;flex-direction:column;align-items:center;gap:4px">
+          <div style="display:flex;width:32px;height:32px;margin-bottom:8px;align-items:center;justify-content:center;border-radius:0.5rem;background:var(--muted);box-shadow:0 0 0 1px var(--border);color:var(--foreground)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v17l-2.5-1.5L15 21l-3-1.5L9 21l-2.5-1.5L4 21Z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
+          </div>
+          <div style="font-size:14px;font-weight:500;letter-spacing:-0.01em;color:var(--foreground)">No receipts yet</div>
+          <div style="font-size:12px;line-height:1.625;color:var(--muted-foreground)">Upload a receipt to start tracking your expenses automatically.</div>
+        </div>
+        <div style="display:flex;height:28px;align-items:center;gap:4px;border-radius:0.5rem;background:var(--primary);color:var(--primary-foreground);padding:0 8px;font-size:12px;font-weight:500">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 7.5 12 3.5l4 4"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg>
+          <span>Upload your first receipt</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFilled }}" hint-placeholder-val="{{ true }}">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;color:var(--foreground)">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="width:56px;height:40px;padding:0 8px"></th>
+            <th style="height:40px;padding:0 8px;text-align:left;font-weight:500;white-space:nowrap">Merchant</th>
+            <th style="height:40px;padding:0 8px;text-align:left;font-weight:500;white-space:nowrap">Date</th>
+            <th style="height:40px;padding:0 8px;text-align:right;font-weight:500;white-space:nowrap">Amount</th>
+            <th style="width:40px;height:40px;padding:0 8px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="4">
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:8px;vertical-align:middle"><div style="width:40px;height:40px;border-radius:0.5rem;background:var(--muted);box-shadow:0 0 0 1px var(--border)"></div></td>
+              <td style="padding:8px;vertical-align:middle;font-weight:500;white-space:nowrap">{{ row.merchant }}</td>
+              <td style="padding:8px;vertical-align:middle;white-space:nowrap;color:var(--muted-foreground)">{{ row.date }}</td>
+              <td style="padding:8px;vertical-align:middle;text-align:right;white-space:nowrap">{{ row.amount }}</td>
+              <td style="padding:8px;vertical-align:middle">
+                <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:0.5rem;color:var(--foreground)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                </div>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:620},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;filled&quot;,&quot;empty&quot;,&quot;loading&quot;],&quot;default&quot;:&quot;filled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;themeLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? "filled";
+    return {
+      isFilled: state === "filled",
+      isEmpty: state === "empty",
+      isLoading: state === "loading",
+      themeLabel: this.props.themeLabel ?? "Dark",
+      rows: [
+        { merchant: "Rewe", date: "2026-09-14", amount: "42.18 EUR" },
+        { merchant: "dm-drogerie markt", date: "2026-09-12", amount: "13.95 EUR" },
+        { merchant: "Bahnhof Apotheke", date: "2026-09-09", amount: "8.40 EUR" },
+        { merchant: "Edeka Südwest", date: "2026-09-05", amount: "67.02 EUR" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
