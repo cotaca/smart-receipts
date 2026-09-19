@@ -15,10 +15,12 @@ from backend.core.security import (
 )
 from backend.models.user import User
 from backend.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
     UserPublic,
+    UserSettingsUpdate,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -96,3 +98,43 @@ def logout(response: Response):
 @router.get("/me", response_model=UserPublic)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.patch("/me", response_model=UserPublic)
+def update_me(
+    body: UserSettingsUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    body: ChangePasswordRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Change the current user's password.
+
+    Existing access/refresh tokens stay valid, refresh
+    tokens are deliberately stateless with no revocation table, so there is
+    nothing to invalidate here. A stolen token survives a password change
+    until it expires; that's a pre-existing, documented trade-off, not
+    something this endpoint should try to fix.
+    """
+    if not verify_password(body.current_password, current_user.hashed_password):
+        # 400, not 401: the bearer token is valid and the request is
+        # authenticated -- the wrong value is inside the body. Keeping this a
+        # 401 would make a future global 401->logout interceptor sign the
+        # user out on every typo.
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Incorrect current password")
+
+    current_user.hashed_password = hash_password(body.new_password)
+    session.add(current_user)
+    session.commit()

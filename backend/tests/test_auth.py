@@ -127,3 +127,155 @@ async def test_logout_clears_refresh_cookie(client):
 
     refresh_response = await client.post("/auth/refresh")
     assert refresh_response.status_code == 401
+
+
+async def _auth_headers(client) -> dict[str, str]:
+    register_response = await _register(client)
+    return {"Authorization": f"Bearer {register_response.json()['access_token']}"}
+
+
+async def test_me_returns_default_settings(client):
+    headers = await _auth_headers(client)
+
+    response = await client.get("/auth/me", headers=headers)
+
+    body = response.json()
+    assert body["number_format"] == "de-DE"
+    assert body["default_currency"] == "EUR"
+
+
+async def test_patch_me_updates_number_format(client):
+    headers = await _auth_headers(client)
+
+    response = await client.patch(
+        "/auth/me", json={"number_format": "en-US"}, headers=headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["number_format"] == "en-US"
+
+
+async def test_patch_me_partial_update_leaves_other_field_untouched(client):
+    headers = await _auth_headers(client)
+    await client.patch("/auth/me", json={"default_currency": "USD"}, headers=headers)
+
+    response = await client.patch(
+        "/auth/me", json={"number_format": "en-US"}, headers=headers
+    )
+
+    body = response.json()
+    assert body["number_format"] == "en-US"
+    assert body["default_currency"] == "USD"
+
+
+async def test_patch_me_invalid_number_format_returns_422(client):
+    headers = await _auth_headers(client)
+
+    response = await client.patch(
+        "/auth/me", json={"number_format": "fr-FR"}, headers=headers
+    )
+
+    assert response.status_code == 422
+
+
+async def test_patch_me_invalid_currency_returns_422(client):
+    headers = await _auth_headers(client)
+
+    response = await client.patch(
+        "/auth/me", json={"default_currency": "JPY"}, headers=headers
+    )
+
+    assert response.status_code == 422
+
+
+async def test_patch_me_without_token_returns_401(client):
+    response = await client.patch("/auth/me", json={"number_format": "en-US"})
+
+    assert response.status_code == 401
+
+
+async def test_change_password_succeeds_and_new_password_logs_in(client):
+    headers = await _auth_headers(client)
+
+    response = await client.post(
+        "/auth/change-password",
+        json={"current_password": PASSWORD, "new_password": "new-secure-password"},
+        headers=headers,
+    )
+    assert response.status_code == 204
+
+    login_response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": "new-secure-password"}
+    )
+    assert login_response.status_code == 200
+
+    old_login_response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": PASSWORD}
+    )
+    assert old_login_response.status_code == 401
+
+
+async def test_change_password_wrong_current_password_returns_400(client):
+    headers = await _auth_headers(client)
+
+    response = await client.post(
+        "/auth/change-password",
+        json={"current_password": "wrong-password", "new_password": "whatever123"},
+        headers=headers,
+    )
+
+    assert response.status_code == 400
+
+
+async def test_change_password_without_token_returns_401(client):
+    response = await client.post(
+        "/auth/change-password",
+        json={"current_password": PASSWORD, "new_password": "whatever123"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_register_rejects_password_bcrypt_would_truncate(client):
+    response = await client.post(
+        "/auth/register",
+        json={"email": "long@test.com", "password": "a" * 73},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_register_counts_password_bytes_not_characters(client):
+    # 40 umlauts are 80 UTF-8 bytes, so this is over the limit despite being
+    # well under 72 characters.
+    response = await client.post(
+        "/auth/register",
+        json={"email": "umlaut@test.com", "password": "ä" * 40},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_change_password_rejects_password_bcrypt_would_truncate(client):
+    headers = await _auth_headers(client)
+
+    response = await client.post(
+        "/auth/change-password",
+        headers=headers,
+        json={"current_password": PASSWORD, "new_password": "a" * 73},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_login_still_accepts_overlong_password_input(client):
+    # Accounts created before the limit existed may have a longer password;
+    # login must compare it instead of rejecting the request outright.
+    await _register(client)
+
+    response = await client.post(
+        "/auth/login",
+        json={"email": EMAIL, "password": "a" * 100},
+    )
+
+    assert response.status_code == 401  # wrong password, not a 422
