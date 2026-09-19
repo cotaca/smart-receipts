@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 
 import { ReceiptImage } from "@/components/receipts/receipt-image";
+import { formatAmount } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,8 @@ type ReceiptFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   receipt?: ReceiptPublic;
+  defaultCurrency: string;
+  numberFormat: string;
   onSaved: (receipt: ReceiptPublic) => void;
 };
 
@@ -76,6 +79,8 @@ export function ReceiptFormDialog({
   open,
   onOpenChange,
   receipt,
+  defaultCurrency,
+  numberFormat,
   onSaved,
 }: ReceiptFormDialogProps) {
   return (
@@ -88,6 +93,8 @@ export function ReceiptFormDialog({
           <ReceiptForm
             key={receipt?.id ?? "create"}
             receipt={receipt}
+            defaultCurrency={defaultCurrency}
+            numberFormat={numberFormat}
             onOpenChange={onOpenChange}
             onSaved={onSaved}
           />
@@ -99,17 +106,27 @@ export function ReceiptFormDialog({
 
 type ReceiptFormProps = {
   receipt?: ReceiptPublic;
+  defaultCurrency: string;
+  numberFormat: string;
   onOpenChange: (open: boolean) => void;
   onSaved: (receipt: ReceiptPublic) => void;
 };
 
-function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
+function ReceiptForm({
+  receipt,
+  defaultCurrency,
+  numberFormat,
+  onOpenChange,
+  onSaved,
+}: ReceiptFormProps) {
   const isEdit = Boolean(receipt);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [merchant, setMerchant] = useState(receipt?.merchant ?? "");
   const [amount, setAmount] = useState(receipt?.amount ?? "");
-  const [currency, setCurrency] = useState(receipt?.currency ?? "EUR");
+  const [currency, setCurrency] = useState(
+    receipt?.currency ?? defaultCurrency,
+  );
   const [purchasedAt, setPurchasedAt] = useState(receipt?.purchased_at ?? "");
   const [notes, setNotes] = useState(receipt?.notes ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -350,7 +367,7 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
                       required
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="12,34"
+                      placeholder={formatAmount("12.34", numberFormat)}
                       className="font-mono"
                     />
                   </div>
@@ -363,7 +380,9 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
                     </div>
                     <Select
                       value={currency}
-                      onValueChange={(value) => setCurrency(value ?? "EUR")}
+                      onValueChange={(value) =>
+                        setCurrency(value ?? defaultCurrency)
+                      }
                     >
                       <SelectTrigger id="currency">
                         <SelectValue />

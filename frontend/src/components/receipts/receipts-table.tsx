@@ -24,6 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { ReceiptPublic } from "@/lib/api";
+import { useMe } from "@/lib/me-context";
+import { formatAmount } from "@/lib/utils";
 
 type ReceiptsTableProps = {
   receipts: ReceiptPublic[];
@@ -36,6 +38,8 @@ export function ReceiptsTable({
   onEdit,
   onDelete,
 }: ReceiptsTableProps) {
+  const { me } = useMe();
+
   return (
     <Table>
       <TableHeader>
@@ -62,7 +66,8 @@ export function ReceiptsTable({
               {receipt.purchased_at}
             </TableCell>
             <TableCell className="text-right font-mono">
-              {receipt.amount} {receipt.currency}
+              {formatAmount(receipt.amount, me.number_format)}{" "}
+              {receipt.currency}
             </TableCell>
             <TableCell>
               <DropdownMenu>

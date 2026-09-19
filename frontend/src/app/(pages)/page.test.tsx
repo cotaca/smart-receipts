@@ -9,9 +9,27 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "@/lib/api";
-import type { ReceiptExtraction, ReceiptPublic } from "@/lib/api";
+import type { Me, ReceiptExtraction, ReceiptPublic } from "@/lib/api";
+import { MeProvider } from "@/lib/me-context";
 
 import ReceiptsPage from "./page";
+
+const ME: Me = {
+  id: "1",
+  email: "jane@example.com",
+  is_active: true,
+  created_at: "2026-01-01T00:00:00Z",
+  number_format: "de-DE",
+  default_currency: "EUR",
+};
+
+function renderPage() {
+  return render(
+    <MeProvider me={ME} setMe={vi.fn()}>
+      <ReceiptsPage />
+    </MeProvider>,
+  );
+}
 
 const NO_EXTRACTION: ReceiptExtraction = {
   merchant: null,
@@ -61,7 +79,7 @@ describe("ReceiptsPage", () => {
   it("shows the empty state when there are no receipts", async () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([]);
 
-    render(<ReceiptsPage />);
+    renderPage();
 
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
@@ -71,7 +89,7 @@ describe("ReceiptsPage", () => {
   it("shows an error message when the receipts list fails to load", async () => {
     vi.spyOn(api, "listReceipts").mockRejectedValue(new Error("network"));
 
-    render(<ReceiptsPage />);
+    renderPage();
 
     await waitFor(() =>
       expect(
@@ -83,14 +101,14 @@ describe("ReceiptsPage", () => {
   it("renders a table row for each receipt", async () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
 
-    render(<ReceiptsPage />);
+    renderPage();
 
     await waitFor(() =>
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
     const row = screen.getByRole("row", { name: /Trader Joe's/ });
     expect(within(row).getByText("2024-01-15")).toBeInTheDocument();
-    expect(within(row).getByText("12.34 EUR")).toBeInTheDocument();
+    expect(within(row).getByText("12,34 EUR")).toBeInTheDocument();
   });
 
   it("shows all receipts by default (no period filter applied)", async () => {
@@ -101,7 +119,7 @@ describe("ReceiptsPage", () => {
     });
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT, old]);
 
-    render(<ReceiptsPage />);
+    renderPage();
 
     await waitFor(() =>
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
@@ -114,7 +132,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT, other]);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
@@ -140,7 +158,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([recent, old]);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("This Month Shop")).toBeInTheDocument(),
     );
@@ -170,7 +188,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([cheap, pricey]);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("Cheap Shop")).toBeInTheDocument(),
     );
@@ -191,7 +209,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "createReceipt").mockResolvedValue(RECEIPT);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -226,7 +244,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "createReceipt").mockResolvedValue(RECEIPT);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -260,7 +278,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "createReceipt").mockResolvedValue(RECEIPT);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -299,7 +317,7 @@ describe("ReceiptsPage", () => {
     );
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -339,7 +357,7 @@ describe("ReceiptsPage", () => {
     });
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -362,7 +380,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "extractReceipt").mockResolvedValue(NO_EXTRACTION);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -389,7 +407,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "extractReceipt").mockRejectedValue(new Error("network"));
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
     );
@@ -416,7 +434,7 @@ describe("ReceiptsPage", () => {
     vi.spyOn(api, "deleteReceipt").mockResolvedValue(undefined);
 
     const user = userEvent.setup();
-    render(<ReceiptsPage />);
+    renderPage();
     await waitFor(() =>
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
@@ -429,7 +447,7 @@ describe("ReceiptsPage", () => {
 
     const confirmDialog = await screen.findByRole("alertdialog");
     expect(
-      within(confirmDialog).getByText("2024-01-15 · 12.34 EUR"),
+      within(confirmDialog).getByText("2024-01-15 · 12,34 EUR"),
     ).toBeInTheDocument();
 
     await user.click(

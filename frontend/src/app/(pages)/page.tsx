@@ -44,6 +44,8 @@ import { ReceiptFormDialog } from "@/components/receipts/receipt-form-dialog";
 import { ReceiptImage } from "@/components/receipts/receipt-image";
 import { ReceiptsTable } from "@/components/receipts/receipts-table";
 import { deleteReceipt, listReceipts, type ReceiptPublic } from "@/lib/api";
+import { useMe } from "@/lib/me-context";
+import { formatAmount } from "@/lib/utils";
 
 type PeriodFilter = "all" | "this-month" | "last-3-months" | "this-year";
 type SortOrder = "newest" | "oldest" | "amount-desc" | "amount-asc";
@@ -91,6 +93,7 @@ function sortReceipts(
 }
 
 export default function ReceiptsPage() {
+  const { me } = useMe();
   const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
   const [listError, setListError] = useState(false);
 
@@ -198,7 +201,8 @@ export default function ReceiptsPage() {
               <>
                 {summary.count} receipts ·{" "}
                 <span className="font-mono">
-                  {summary.total} {summary.currency}
+                  {formatAmount(summary.total, me.number_format)}{" "}
+                  {summary.currency}
                 </span>{" "}
                 tracked
               </>
@@ -306,6 +310,8 @@ export default function ReceiptsPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         receipt={editingReceipt}
+        defaultCurrency={me.default_currency}
+        numberFormat={me.number_format}
         onSaved={handleSaved}
       />
 
@@ -334,7 +340,8 @@ export default function ReceiptsPage() {
                   {deletingReceipt.merchant}
                 </div>
                 <div className="font-mono text-[11px] text-muted-foreground">
-                  {deletingReceipt.purchased_at} · {deletingReceipt.amount}{" "}
+                  {deletingReceipt.purchased_at} ·{" "}
+                  {formatAmount(deletingReceipt.amount, me.number_format)}{" "}
                   {deletingReceipt.currency}
                 </div>
               </div>
