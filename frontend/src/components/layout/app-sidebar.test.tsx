@@ -15,6 +15,8 @@ const ME = {
   email: "jane@example.com",
   is_active: true,
   created_at: "2026-01-01T00:00:00Z",
+  number_format: "de-DE" as const,
+  default_currency: "EUR" as const,
 };
 
 function renderSidebar() {

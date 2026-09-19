@@ -36,5 +36,5 @@ export function useAuthGuard() {
     };
   }, [router]);
 
-  return { checking, me };
+  return { checking, me, setMe };
 }
