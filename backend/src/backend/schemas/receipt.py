@@ -26,3 +26,11 @@ class ReceiptUpdate(BaseModel):
     currency: str | None = None
     purchased_at: date | None = None
     notes: str | None = None
+
+
+class ReceiptExtraction(BaseModel):
+    """OCR guess for the create form -- any field may be None if unrecognized."""
+
+    merchant: str | None
+    amount: Decimal | None
+    purchased_at: date | None
