@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, type SubmitEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 
+import { ReceiptImage } from "@/components/receipts/receipt-image";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -20,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -27,6 +32,7 @@ import {
   createReceipt,
   extractReceipt,
   updateReceipt,
+  type ReceiptExtraction,
   type ReceiptPublic,
 } from "@/lib/api";
 
@@ -48,6 +54,17 @@ function RequiredMark() {
   );
 }
 
+// "Suggested" / "Not detected" per field — this is all POST /receipts/extract
+// tells us. It returns no source or confidence, so anything more specific
+// (e.g. "top of receipt", a bounding-box overlay) would be fabricated copy.
+function ExtractionBadge({ found }: { found: boolean }) {
+  return (
+    <Badge variant={found ? "secondary" : "outline"}>
+      {found ? "Suggested" : "Not detected"}
+    </Badge>
+  );
+}
+
 type ReceiptFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,7 +80,7 @@ export function ReceiptFormDialog({
 }: ReceiptFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         {/* Keyed by receipt id (or "create") and only mounted while open, so
             switching targets or reopening always starts from fresh state —
             no effect needed to sync form fields from props. */}
@@ -88,6 +105,7 @@ type ReceiptFormProps = {
 
 function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
   const isEdit = Boolean(receipt);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [merchant, setMerchant] = useState(receipt?.merchant ?? "");
   const [amount, setAmount] = useState(receipt?.amount ?? "");
@@ -97,10 +115,34 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extraction, setExtraction] = useState<ReceiptExtraction | null>(null);
   const [error, setError] = useState("");
+
+  // Local object URL for the create-mode preview. Created during render via
+  // useMemo (not useState+useEffect — that would call setState synchronously
+  // in the effect body) and revoked in a cleanup-only effect whenever the
+  // memoized URL changes, i.e. on file change and on unmount.
+  const previewUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const isScanning = !isEdit && isExtracting;
+  const isReview = !isEdit && !isExtracting && extraction !== null;
+  const foundCount = extraction
+    ? [extraction.merchant, extraction.amount, extraction.purchased_at].filter(
+        Boolean,
+      ).length
+    : 0;
 
   async function handleFileChange(selected: File | null) {
     setFile(selected);
+    setExtraction(null);
     if (!selected) return;
 
     setIsExtracting(true);
@@ -111,6 +153,7 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
       if (data.merchant) setMerchant(data.merchant);
       if (data.amount) setAmount(data.amount);
       if (data.purchased_at) setPurchasedAt(data.purchased_at);
+      setExtraction(data);
     } catch {
       // Extraction is a convenience, not a requirement -- swallow errors so
       // manual entry keeps working exactly as before.
@@ -186,97 +229,189 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
           <span className="text-destructive">*</span> Required
         </p>
 
-        {!isEdit && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="file">
-              Receipt image <RequiredMark />
-            </Label>
-            {/* No `required` attribute — validated in handleSubmit instead,
-                which also gives a proper in-context error message. */}
-            <div className="flex items-center gap-2">
-              <Input
-                id="file"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+        <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
+          {/* Preview column */}
+          <div className="flex flex-col gap-2">
+            {isEdit && receipt ? (
+              <ReceiptImage
+                receiptId={receipt.id}
+                alt={receipt.merchant}
+                className="aspect-square w-full rounded-lg"
               />
-              {isExtracting && <Spinner />}
-            </div>
+            ) : previewUrl ? (
+              // Local blob preview — the file never left the browser yet, so
+              // this can't go through ReceiptImage (which fetches from the API).
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={previewUrl}
+                alt="Receipt preview"
+                className="aspect-square w-full rounded-lg border border-border object-cover"
+              />
+            ) : (
+              <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground">
+                No file selected
+              </div>
+            )}
+
+            {!isEdit && (
+              <div className="flex flex-col gap-1.5">
+                <input
+                  ref={fileInputRef}
+                  id="file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  className="sr-only"
+                  onChange={(e) =>
+                    handleFileChange(e.target.files?.[0] ?? null)
+                  }
+                />
+                <Label htmlFor="file">
+                  Receipt image <RequiredMark />
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {file ? "Replace file" : "Choose file"}
+                  {isExtracting && <Spinner />}
+                </Button>
+              </div>
+            )}
           </div>
-        )}
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="merchant">
-            Merchant <RequiredMark />
-          </Label>
-          <Input
-            id="merchant"
-            required
-            value={merchant}
-            onChange={(e) => setMerchant(e.target.value)}
-            placeholder="Rewe"
-          />
-        </div>
+          {/* Fields column */}
+          <div className="flex flex-col gap-4">
+            {isScanning && (
+              <Alert>
+                <Spinner />
+                <AlertTitle>Reading your receipt…</AlertTitle>
+                <AlertDescription>
+                  Merchant, total and purchase date only. Nothing leaves your
+                  account.
+                </AlertDescription>
+                <Progress value={null} className="mt-1" />
+              </Alert>
+            )}
 
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1.5">
-            <Label htmlFor="amount">
-              Amount <RequiredMark />
-            </Label>
-            {/* type="text" not "number" — number inputs reject "," entirely
-                in most locales, which would block European decimal input.
-                Validated against AMOUNT_PATTERN in handleSubmit instead. */}
-            <Input
-              id="amount"
-              type="text"
-              inputMode="decimal"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="12,34"
-            />
+            {isReview && (
+              <Alert>
+                <AlertDescription>
+                  {foundCount} of 3 fields found.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isScanning ? (
+              <>
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex h-5 items-center gap-2">
+                    <Label htmlFor="merchant">
+                      Merchant <RequiredMark />
+                    </Label>
+                    {isReview && (
+                      <ExtractionBadge found={Boolean(extraction?.merchant)} />
+                    )}
+                  </div>
+                  <Input
+                    id="merchant"
+                    required
+                    value={merchant}
+                    onChange={(e) => setMerchant(e.target.value)}
+                    placeholder="Rewe"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <div className="flex h-5 items-center gap-2">
+                      <Label htmlFor="amount">
+                        Amount <RequiredMark />
+                      </Label>
+                      {isReview && (
+                        <ExtractionBadge found={Boolean(extraction?.amount)} />
+                      )}
+                    </div>
+                    {/* type="text" not "number" — number inputs reject ","
+                        entirely in most locales, which would block European
+                        decimal input. Validated against AMOUNT_PATTERN in
+                        handleSubmit instead. */}
+                    <Input
+                      id="amount"
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="12,34"
+                      className="font-mono"
+                    />
+                  </div>
+                  <div className="flex w-28 flex-col gap-1.5">
+                    {/* Same fixed-height row as the other labels, so the
+                        select stays level with the amount input even when
+                        that one carries an extraction badge. */}
+                    <div className="flex h-5 items-center">
+                      <Label htmlFor="currency">Currency</Label>
+                    </div>
+                    <Select
+                      value={currency}
+                      onValueChange={(value) => setCurrency(value ?? "EUR")}
+                    >
+                      <SelectTrigger id="currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            {code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex h-5 items-center gap-2">
+                    <Label htmlFor="purchased_at">
+                      Purchase date <RequiredMark />
+                    </Label>
+                    {isReview && (
+                      <ExtractionBadge
+                        found={Boolean(extraction?.purchased_at)}
+                      />
+                    )}
+                  </div>
+                  <Input
+                    id="purchased_at"
+                    type="date"
+                    required
+                    value={purchasedAt}
+                    onChange={(e) => setPurchasedAt(e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              </>
+            )}
           </div>
-          <div className="flex w-28 flex-col gap-1.5">
-            <Label htmlFor="currency">Currency</Label>
-            <Select
-              value={currency}
-              onValueChange={(value) => setCurrency(value ?? "EUR")}
-            >
-              <SelectTrigger id="currency">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((code) => (
-                  <SelectItem key={code} value={code}>
-                    {code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="purchased_at">
-            Purchase date <RequiredMark />
-          </Label>
-          <Input
-            id="purchased_at"
-            type="date"
-            required
-            value={purchasedAt}
-            onChange={(e) => setPurchasedAt(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional"
-          />
         </div>
 
         <DialogFooter>
