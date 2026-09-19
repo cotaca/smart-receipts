@@ -205,6 +205,69 @@ describe("HomePage", () => {
     expect(api.createReceipt).not.toHaveBeenCalled();
   });
 
+  it("fills the form fields from extraction after selecting a file", async () => {
+    mockAuthenticated();
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: "REWE Markt",
+      amount: "12.34",
+      purchased_at: "2024-01-15",
+    });
+
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await waitFor(() =>
+      expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Upload your first receipt" }),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(within(dialog).getByLabelText(/^Receipt image/), file);
+
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText(/^Merchant/)).toHaveValue(
+        "REWE Markt",
+      ),
+    );
+    expect(within(dialog).getByLabelText(/^Amount/)).toHaveValue("12.34");
+    expect(within(dialog).getByLabelText(/^Purchase date/)).toHaveValue(
+      "2024-01-15",
+    );
+  });
+
+  it("keeps the form usable without an error banner when extraction fails", async () => {
+    mockAuthenticated();
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+    vi.spyOn(api, "extractReceipt").mockRejectedValue(new Error("network"));
+
+    const user = userEvent.setup();
+    render(<HomePage />);
+    await waitFor(() =>
+      expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Upload your first receipt" }),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(within(dialog).getByLabelText(/^Receipt image/), file);
+
+    await waitFor(() => expect(api.extractReceipt).toHaveBeenCalled());
+    expect(
+      within(dialog).queryByText(/couldn't|something went wrong/i),
+    ).not.toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText(/^Merchant/), "Trader Joe's");
+    expect(within(dialog).getByLabelText(/^Merchant/)).toHaveValue(
+      "Trader Joe's",
+    );
+  });
+
   it("deletes a receipt after confirmation", async () => {
     mockAuthenticated();
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);

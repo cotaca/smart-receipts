@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ApiError,
   createReceipt,
+  extractReceipt,
   updateReceipt,
   type ReceiptPublic,
 } from "@/lib/api";
@@ -95,7 +96,28 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
   const [notes, setNotes] = useState(receipt?.notes ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState("");
+
+  async function handleFileChange(selected: File | null) {
+    setFile(selected);
+    if (!selected) return;
+
+    setIsExtracting(true);
+    try {
+      const data = await extractReceipt(selected);
+      // Only fill fields the OCR actually recognized -- never clear
+      // something the user already typed because extraction found nothing.
+      if (data.merchant) setMerchant(data.merchant);
+      if (data.amount) setAmount(data.amount);
+      if (data.purchased_at) setPurchasedAt(data.purchased_at);
+    } catch {
+      // Extraction is a convenience, not a requirement -- swallow errors so
+      // manual entry keeps working exactly as before.
+    } finally {
+      setIsExtracting(false);
+    }
+  }
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -171,12 +193,15 @@ function ReceiptForm({ receipt, onOpenChange, onSaved }: ReceiptFormProps) {
             </Label>
             {/* No `required` attribute — validated in handleSubmit instead,
                 which also gives a proper in-context error message. */}
-            <Input
-              id="file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic"
+                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+              />
+              {isExtracting && <Spinner />}
+            </div>
           </div>
         )}
 

@@ -155,6 +155,22 @@ export function getReceipt(id: string) {
   return apiFetch<ReceiptPublic>(`/receipts/${id}`);
 }
 
+export type ReceiptExtraction = {
+  merchant: string | null;
+  amount: string | null;
+  purchased_at: string | null;
+};
+
+export function extractReceipt(file: File) {
+  const formData = new FormData();
+  formData.set("file", file);
+
+  return apiFetch<ReceiptExtraction>("/receipts/extract", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export function createReceipt(input: ReceiptCreateInput) {
   const formData = new FormData();
   formData.set("file", input.file);
