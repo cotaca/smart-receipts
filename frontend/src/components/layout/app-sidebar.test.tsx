@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -17,6 +17,7 @@ const ME = {
   created_at: "2026-01-01T00:00:00Z",
   number_format: "de-DE" as const,
   default_currency: "EUR" as const,
+  language: "de" as const,
 };
 
 function renderSidebar() {

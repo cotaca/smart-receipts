@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@/test/render";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +15,7 @@ const ME: Me = {
   created_at: "2026-01-01T00:00:00Z",
   number_format: "de-DE",
   default_currency: "EUR",
+  language: "de",
 };
 
 function renderPage() {
@@ -111,6 +106,19 @@ describe("ReceiptsPage", () => {
     expect(within(row).getByText("12,34 EUR")).toBeInTheDocument();
   });
 
+  // Regression test: the ICU plural must render "1 receipt", not the
+  // pre-i18n bug of "1 receipts", for a single tracked receipt.
+  it("uses the singular form of the summary for exactly one receipt", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByText(/1 receipt ·/)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/1 receipts/)).not.toBeInTheDocument();
+  });
+
   it("shows all receipts by default (no period filter applied)", async () => {
     const old = receipt({
       id: "old",
@@ -172,6 +180,27 @@ describe("ReceiptsPage", () => {
     expect(screen.queryByText("Old Shop")).not.toBeInTheDocument();
 
     vi.useRealTimers();
+  });
+
+  // Regression test: without `items` on Select, Base UI's SelectValue renders
+  // the raw value ("all", "this-month") in the trigger instead of the item's
+  // label, so the filters showed untranslated internal strings.
+  it("shows the selected filter's label in the trigger, not its raw value", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    renderPage();
+
+    const period = screen.getByRole("combobox", { name: "Period" });
+    const sort = screen.getByRole("combobox", { name: "Sort order" });
+    expect(period).toHaveTextContent("All time");
+    expect(sort).toHaveTextContent("Sort: Newest");
+
+    await user.click(period);
+    await user.click(await screen.findByRole("option", { name: "This month" }));
+
+    expect(period).toHaveTextContent("This month");
+    expect(period).not.toHaveTextContent("this-month");
   });
 
   it("sorts the table by amount", async () => {

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "@/test/render";
 import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./app-shell";
@@ -15,6 +15,7 @@ const ME = {
   created_at: "2026-01-01T00:00:00Z",
   number_format: "de-DE" as const,
   default_currency: "EUR" as const,
+  language: "de" as const,
 };
 
 describe("AppShell", () => {
@@ -32,5 +33,21 @@ describe("AppShell", () => {
     const trigger = screen.getByRole("button", { name: /toggle sidebar/i });
     expect(trigger).toBeInTheDocument();
     expect(trigger).toHaveClass("md:hidden");
+  });
+
+  // Regression test: the trigger's accessible name must come from the
+  // translated aria-label, not the sr-only "Toggle Sidebar" span baked into
+  // the shadcn-generated SidebarTrigger -- otherwise a German-mode
+  // screen-reader user gets an English label on the only mobile nav control.
+  it("exposes the translated accessible name to assistive tech", () => {
+    render(
+      <AppShell me={ME}>
+        <div>content</div>
+      </AppShell>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Toggle sidebar" }),
+    ).toBeInTheDocument();
   });
 });
