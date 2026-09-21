@@ -16,3 +16,5 @@ class User(SQLModel, table=True):
     # to Intl.NumberFormat(number_format), no mapping table on either side.
     number_format: str = Field(default="de-DE")
     default_currency: str = Field(default="EUR")
+    # UI language, independent of number_format -- see ARCHITECTURE.md.
+    language: str = Field(default="de")

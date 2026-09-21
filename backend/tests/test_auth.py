@@ -142,6 +142,7 @@ async def test_me_returns_default_settings(client):
     body = response.json()
     assert body["number_format"] == "de-DE"
     assert body["default_currency"] == "EUR"
+    assert body["language"] == "de"
 
 
 async def test_patch_me_updates_number_format(client):
@@ -153,6 +154,23 @@ async def test_patch_me_updates_number_format(client):
 
     assert response.status_code == 200
     assert response.json()["number_format"] == "en-US"
+
+
+async def test_patch_me_updates_language(client):
+    headers = await _auth_headers(client)
+
+    response = await client.patch("/auth/me", json={"language": "en"}, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["language"] == "en"
+
+
+async def test_patch_me_invalid_language_returns_422(client):
+    headers = await _auth_headers(client)
+
+    response = await client.patch("/auth/me", json={"language": "fr"}, headers=headers)
+
+    assert response.status_code == 422
 
 
 async def test_patch_me_partial_update_leaves_other_field_untouched(client):

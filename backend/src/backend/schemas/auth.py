@@ -6,6 +6,7 @@ from pydantic import AfterValidator, BaseModel, EmailStr
 
 NumberFormat = Literal["de-DE", "en-US"]
 Currency = Literal["EUR", "USD", "GBP", "CHF"]
+Language = Literal["de", "en"]
 
 BCRYPT_MAX_BYTES = 72
 
@@ -47,11 +48,13 @@ class UserPublic(BaseModel):
     created_at: datetime
     number_format: NumberFormat
     default_currency: Currency
+    language: Language
 
 
 class UserSettingsUpdate(BaseModel):
     number_format: NumberFormat | None = None
     default_currency: Currency | None = None
+    language: Language | None = None
 
 
 class ChangePasswordRequest(BaseModel):
