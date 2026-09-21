@@ -2,6 +2,7 @@
 
 import { useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Mail01Icon,
@@ -31,6 +32,7 @@ import { ApiError, login, register, setAccessToken } from "@/lib/api";
 type Mode = "login" | "register";
 
 export default function LoginPage() {
+  const t = useTranslations("LoginPage");
   const router = useRouter();
   const { dark, toggleTheme } = useTheme();
 
@@ -65,11 +67,11 @@ export default function LoginPage() {
       setTimeout(() => router.push("/"), 700);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        setErrorMessage("Invalid email or password");
+        setErrorMessage(t("errorInvalidCredentials"));
       } else if (err instanceof ApiError && err.status === 409) {
-        setErrorMessage("Email already registered");
+        setErrorMessage(t("errorEmailRegistered"));
       } else {
-        setErrorMessage("Something went wrong. Please try again.");
+        setErrorMessage(t("errorGeneric"));
       }
       setIsLoading(false);
     }
@@ -97,8 +99,8 @@ export default function LoginPage() {
               onValueChange={(value) => switchMode(value as Mode)}
             >
               <TabsList className="w-full">
-                <TabsTrigger value="login">Log in</TabsTrigger>
-                <TabsTrigger value="register">Create account</TabsTrigger>
+                <TabsTrigger value="login">{t("tabLogin")}</TabsTrigger>
+                <TabsTrigger value="register">{t("tabRegister")}</TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -111,10 +113,10 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="text-sm font-semibold text-foreground">
-                  {isLogin ? "Signed in" : "Account created"}
+                  {isLogin ? t("signedIn") : t("accountCreated")}
                 </div>
                 <div className="text-center text-xs text-muted-foreground">
-                  Redirecting you to your receipts…
+                  {t("redirecting")}
                 </div>
               </div>
             ) : (
@@ -127,7 +129,7 @@ export default function LoginPage() {
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("emailLabel")}</Label>
                   <InputGroup>
                     <InputGroupAddon>
                       <HugeiconsIcon icon={Mail01Icon} />
@@ -138,13 +140,13 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      placeholder={t("emailPlaceholder")}
                     />
                   </InputGroup>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("passwordLabel")}</Label>
                   <InputGroup>
                     <InputGroupAddon>
                       <HugeiconsIcon icon={LockPasswordIcon} />
@@ -155,13 +157,13 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={t("passwordPlaceholder")}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupButton
                         size="icon-xs"
                         onClick={() => setShowPassword((v) => !v)}
-                        aria-label="Toggle password visibility"
+                        aria-label={t("togglePasswordVisibility")}
                       >
                         <HugeiconsIcon
                           icon={showPassword ? ViewOffIcon : ViewIcon}
@@ -175,17 +177,15 @@ export default function LoginPage() {
                   {isLoading && <Spinner />}
                   {isLoading
                     ? isLogin
-                      ? "Signing in…"
-                      : "Creating account…"
+                      ? t("submitLoginLoading")
+                      : t("submitRegisterLoading")
                     : isLogin
-                      ? "Log in"
-                      : "Create account"}
+                      ? t("submitLogin")
+                      : t("submitRegister")}
                 </Button>
 
                 <div className="text-center text-xs text-muted-foreground">
-                  {isLogin
-                    ? "Don't have an account?"
-                    : "Already have an account?"}{" "}
+                  {isLogin ? t("promptNoAccount") : t("promptHasAccount")}{" "}
                   <Button
                     type="button"
                     variant="link"
@@ -193,7 +193,7 @@ export default function LoginPage() {
                     className="h-auto p-0 text-foreground"
                     onClick={() => switchMode(isLogin ? "register" : "login")}
                   >
-                    {isLogin ? "Sign up" : "Log in"}
+                    {isLogin ? t("linkSignUp") : t("linkLogIn")}
                   </Button>
                 </div>
               </form>
@@ -203,7 +203,7 @@ export default function LoginPage() {
 
         <div className="flex justify-center">
           <Button type="button" variant="ghost" size="sm" onClick={toggleTheme}>
-            {dark ? "Switch to light" : "Switch to dark"}
+            {dark ? t("switchToLight") : t("switchToDark")}
           </Button>
         </div>
       </div>

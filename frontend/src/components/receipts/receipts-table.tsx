@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Delete02Icon,
@@ -38,6 +39,7 @@ export function ReceiptsTable({
   onEdit,
   onDelete,
 }: ReceiptsTableProps) {
+  const t = useTranslations("ReceiptsTable");
   const { me } = useMe();
 
   return (
@@ -45,9 +47,9 @@ export function ReceiptsTable({
       <TableHeader>
         <TableRow>
           <TableHead className="w-14" />
-          <TableHead>Merchant</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
+          <TableHead>{t("merchant")}</TableHead>
+          <TableHead>{t("date")}</TableHead>
+          <TableHead className="text-right">{t("amount")}</TableHead>
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
@@ -76,7 +78,7 @@ export function ReceiptsTable({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Receipt actions"
+                      aria-label={t("actionsAriaLabel")}
                     >
                       <HugeiconsIcon icon={MoreVerticalIcon} />
                     </Button>
@@ -85,14 +87,14 @@ export function ReceiptsTable({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onEdit(receipt)}>
                     <HugeiconsIcon icon={PencilEdit02Icon} />
-                    Edit
+                    {t("edit")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => onDelete(receipt)}
                   >
                     <HugeiconsIcon icon={Delete02Icon} />
-                    Delete
+                    {t("delete")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

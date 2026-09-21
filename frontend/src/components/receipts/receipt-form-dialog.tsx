@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
+import { useTranslations } from "next-intl";
 
 import { ReceiptImage } from "@/components/receipts/receipt-image";
 import { formatAmount } from "@/lib/utils";
@@ -59,9 +60,10 @@ function RequiredMark() {
 // tells us. It returns no source or confidence, so anything more specific
 // (e.g. "top of receipt", a bounding-box overlay) would be fabricated copy.
 function ExtractionBadge({ found }: { found: boolean }) {
+  const t = useTranslations("ReceiptFormDialog");
   return (
     <Badge variant={found ? "secondary" : "outline"}>
-      {found ? "Suggested" : "Not detected"}
+      {found ? t("suggested") : t("notDetected")}
     </Badge>
   );
 }
@@ -119,6 +121,7 @@ function ReceiptForm({
   onOpenChange,
   onSaved,
 }: ReceiptFormProps) {
+  const t = useTranslations("ReceiptFormDialog");
   const isEdit = Boolean(receipt);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -184,12 +187,12 @@ function ReceiptForm({
     if (isSubmitting) return;
 
     if (!receipt && !file) {
-      setError("Please select a receipt image");
+      setError(t("selectImageError"));
       return;
     }
 
     if (!AMOUNT_PATTERN.test(amount.trim())) {
-      setError("Please enter a valid amount (e.g. 12.34 or 12,34)");
+      setError(t("invalidAmountError"));
       return;
     }
     const normalizedAmount = normalizeAmount(amount);
@@ -218,11 +221,7 @@ function ReceiptForm({
       onSaved(saved);
       onOpenChange(false);
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? "Couldn't save the receipt. Please check the details and try again."
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof ApiError ? t("saveError") : t("genericError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -231,11 +230,9 @@ function ReceiptForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isEdit ? "Edit receipt" : "Upload receipt"}</DialogTitle>
+        <DialogTitle>{isEdit ? t("editTitle") : t("uploadTitle")}</DialogTitle>
         <DialogDescription>
-          {isEdit
-            ? "Update the details for this receipt."
-            : "Add a receipt image and its details."}
+          {isEdit ? t("editDescription") : t("uploadDescription")}
         </DialogDescription>
       </DialogHeader>
 
@@ -243,7 +240,7 @@ function ReceiptForm({
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">*</span> Required
+          <span className="text-destructive">*</span> {t("required")}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
@@ -261,12 +258,12 @@ function ReceiptForm({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={previewUrl}
-                alt="Receipt preview"
+                alt={t("receiptPreviewAlt")}
                 className="aspect-square w-full rounded-lg border border-border object-cover"
               />
             ) : (
               <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground">
-                No file selected
+                {t("noFileSelected")}
               </div>
             )}
 
@@ -283,7 +280,7 @@ function ReceiptForm({
                   }
                 />
                 <Label htmlFor="file">
-                  Receipt image <RequiredMark />
+                  {t("receiptImageLabel")} <RequiredMark />
                 </Label>
                 <Button
                   type="button"
@@ -291,7 +288,7 @@ function ReceiptForm({
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {file ? "Replace file" : "Choose file"}
+                  {file ? t("replaceFile") : t("chooseFile")}
                   {isExtracting && <Spinner />}
                 </Button>
               </div>
@@ -303,11 +300,8 @@ function ReceiptForm({
             {isScanning && (
               <Alert>
                 <Spinner />
-                <AlertTitle>Reading your receipt…</AlertTitle>
-                <AlertDescription>
-                  Merchant, total and purchase date only. Nothing leaves your
-                  account.
-                </AlertDescription>
+                <AlertTitle>{t("scanningTitle")}</AlertTitle>
+                <AlertDescription>{t("scanningDescription")}</AlertDescription>
                 <Progress value={null} className="mt-1" />
               </Alert>
             )}
@@ -315,7 +309,7 @@ function ReceiptForm({
             {isReview && (
               <Alert>
                 <AlertDescription>
-                  {foundCount} of 3 fields found.
+                  {t("fieldsFound", { count: foundCount })}
                 </AlertDescription>
               </Alert>
             )}
@@ -331,7 +325,7 @@ function ReceiptForm({
                 <div className="flex flex-col gap-1.5">
                   <div className="flex h-5 items-center gap-2">
                     <Label htmlFor="merchant">
-                      Merchant <RequiredMark />
+                      {t("merchantLabel")} <RequiredMark />
                     </Label>
                     {isReview && (
                       <ExtractionBadge found={Boolean(extraction?.merchant)} />
@@ -342,7 +336,7 @@ function ReceiptForm({
                     required
                     value={merchant}
                     onChange={(e) => setMerchant(e.target.value)}
-                    placeholder="Rewe"
+                    placeholder={t("merchantPlaceholder")}
                   />
                 </div>
 
@@ -350,7 +344,7 @@ function ReceiptForm({
                   <div className="flex flex-1 flex-col gap-1.5">
                     <div className="flex h-5 items-center gap-2">
                       <Label htmlFor="amount">
-                        Amount <RequiredMark />
+                        {t("amountLabel")} <RequiredMark />
                       </Label>
                       {isReview && (
                         <ExtractionBadge found={Boolean(extraction?.amount)} />
@@ -376,7 +370,7 @@ function ReceiptForm({
                         select stays level with the amount input even when
                         that one carries an extraction badge. */}
                     <div className="flex h-5 items-center">
-                      <Label htmlFor="currency">Currency</Label>
+                      <Label htmlFor="currency">{t("currencyLabel")}</Label>
                     </div>
                     <Select
                       value={currency}
@@ -401,7 +395,7 @@ function ReceiptForm({
                 <div className="flex flex-col gap-1.5">
                   <div className="flex h-5 items-center gap-2">
                     <Label htmlFor="purchased_at">
-                      Purchase date <RequiredMark />
+                      {t("purchaseDateLabel")} <RequiredMark />
                     </Label>
                     {isReview && (
                       <ExtractionBadge
@@ -420,12 +414,12 @@ function ReceiptForm({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t("notesLabel")}</Label>
                   <Textarea
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Optional"
+                    placeholder={t("notesPlaceholder")}
                   />
                 </div>
               </>
@@ -436,7 +430,7 @@ function ReceiptForm({
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Spinner />}
-            {isEdit ? "Save changes" : "Upload"}
+            {isEdit ? t("saveChanges") : t("upload")}
           </Button>
         </DialogFooter>
       </form>

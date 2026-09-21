@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Invoice01Icon,
@@ -93,6 +94,7 @@ function sortReceipts(
 }
 
 export default function ReceiptsPage() {
+  const t = useTranslations("ReceiptsPage");
   const { me } = useMe();
   const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
   const [listError, setListError] = useState(false);
@@ -100,6 +102,22 @@ export default function ReceiptsPage() {
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<SortOrder>("newest");
+
+  // Passed to Select as `items` as well as mapped into the SelectItems:
+  // without `items`, Base UI's SelectValue falls back to rendering the raw
+  // value ("this-month", "amount-desc") in the trigger instead of the label.
+  const periodOptions: { value: PeriodFilter; label: string }[] = [
+    { value: "all", label: t("periodAll") },
+    { value: "this-month", label: t("periodThisMonth") },
+    { value: "last-3-months", label: t("periodLast3Months") },
+    { value: "this-year", label: t("periodThisYear") },
+  ];
+  const sortOptions: { value: SortOrder; label: string }[] = [
+    { value: "newest", label: t("sortNewest") },
+    { value: "oldest", label: t("sortOldest") },
+    { value: "amount-desc", label: t("sortAmountDesc") },
+    { value: "amount-asc", label: t("sortAmountAsc") },
+  ];
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<
@@ -194,26 +212,21 @@ export default function ReceiptsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            Receipts
+            {t("title")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {summary ? (
-              <>
-                {summary.count} receipts ·{" "}
-                <span className="font-mono">
-                  {formatAmount(summary.total, me.number_format)}{" "}
-                  {summary.currency}
-                </span>{" "}
-                tracked
-              </>
-            ) : (
-              "Track and analyze your expenses"
-            )}
+            {summary
+              ? t.rich("summary", {
+                  count: summary.count,
+                  amount: `${formatAmount(summary.total, me.number_format)} ${summary.currency}`,
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
+                })
+              : t("subtitleFallback")}
           </p>
         </div>
         <Button size="lg" onClick={openCreateDialog}>
           <HugeiconsIcon icon={Upload04Icon} />
-          Upload receipt
+          {t("uploadReceipt")}
         </Button>
       </div>
 
@@ -223,53 +236,60 @@ export default function ReceiptsPage() {
             <HugeiconsIcon icon={Search01Icon} />
           </InputGroupAddon>
           <InputGroupInput
-            placeholder="Search receipts…"
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </InputGroup>
         <Select
+          items={periodOptions}
           value={period}
           onValueChange={(value) => setPeriod((value as PeriodFilter) ?? "all")}
         >
-          {/* aria-label: Base-UI only mounts the popup content (and thus
-              SelectValue's text) after first open, so the trigger has no
-              reliable accessible name before that — don't remove as "redundant". */}
-          <SelectTrigger size="sm" aria-label="Period">
+          {/* aria-label: the trigger's visible text is the selected value, so
+              without this the control has no name of its own telling you what
+              it filters — don't remove as "redundant". */}
+          <SelectTrigger size="sm" aria-label={t("periodAriaLabel")}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All time</SelectItem>
-            <SelectItem value="this-month">This month</SelectItem>
-            <SelectItem value="last-3-months">Last 3 months</SelectItem>
-            <SelectItem value="this-year">This year</SelectItem>
+          {/* SelectContent defaults to w-(--anchor-width), i.e. exactly the
+              trigger's width — and the trigger is w-fit, so it's sized to the
+              *selected* label. Any longer option then gets clipped. Keep that
+              width as the floor, let the popup grow past it. */}
+          <SelectContent className="w-auto min-w-(--anchor-width)">
+            {periodOptions.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select
+          items={sortOptions}
           value={sort}
           onValueChange={(value) => setSort((value as SortOrder) ?? "newest")}
         >
           {/* aria-label: same reason as the Period select above. */}
-          <SelectTrigger size="sm" className="ml-auto" aria-label="Sort order">
+          <SelectTrigger
+            size="sm"
+            className="ml-auto"
+            aria-label={t("sortAriaLabel")}
+          >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Sort: Newest</SelectItem>
-            <SelectItem value="oldest">Sort: Oldest</SelectItem>
-            <SelectItem value="amount-desc">
-              Sort: Amount (high to low)
-            </SelectItem>
-            <SelectItem value="amount-asc">
-              Sort: Amount (low to high)
-            </SelectItem>
+          {/* Same clipping fix as the Period select above. */}
+          <SelectContent className="w-auto min-w-(--anchor-width)">
+            {sortOptions.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       {listError ? (
-        <p className="text-sm text-destructive">
-          {"Couldn't load your receipts. Please refresh the page."}
-        </p>
+        <p className="text-sm text-destructive">{t("loadError")}</p>
       ) : receipts === null ? (
         <div className="flex flex-col gap-2">
           <Skeleton className="h-12 w-full" />
@@ -282,22 +302,18 @@ export default function ReceiptsPage() {
             <EmptyMedia variant="icon">
               <HugeiconsIcon icon={Invoice01Icon} />
             </EmptyMedia>
-            <EmptyTitle>No receipts yet</EmptyTitle>
-            <EmptyDescription>
-              Upload a receipt to start tracking your expenses automatically.
-            </EmptyDescription>
+            <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
+            <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button onClick={openCreateDialog}>
               <HugeiconsIcon icon={Upload04Icon} />
-              Upload your first receipt
+              {t("uploadFirstReceipt")}
             </Button>
           </EmptyContent>
         </Empty>
       ) : visibleReceipts && visibleReceipts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No receipts match your filters.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("noMatches")}</p>
       ) : (
         <ReceiptsTable
           receipts={visibleReceipts ?? []}
@@ -323,9 +339,11 @@ export default function ReceiptsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete receipt?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {`This will permanently delete the receipt from ${deletingReceipt?.merchant}. This can't be undone.`}
+              {t("deleteDescription", {
+                merchant: deletingReceipt?.merchant ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {deletingReceipt && (
@@ -348,12 +366,12 @@ export default function ReceiptsPage() {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

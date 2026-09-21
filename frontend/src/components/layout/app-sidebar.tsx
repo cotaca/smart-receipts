@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon,
@@ -34,18 +35,23 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { logout, setAccessToken, type Me } from "@/lib/api";
 
-// Order matches the ReceiptsDesktop mockup's Workspace group.
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: DashboardSquare01Icon },
-  { href: "/", label: "Receipts", icon: Invoice01Icon },
-  { href: "/settings", label: "Settings", icon: Settings01Icon },
-];
-
 export function AppSidebar({ me }: { me: Me }) {
+  const t = useTranslations("AppSidebar");
   const pathname = usePathname();
   const router = useRouter();
   const { dark, toggleTheme } = useTheme();
   const initials = me.email.slice(0, 2).toUpperCase();
+
+  // Order matches the ReceiptsDesktop mockup's Workspace group.
+  const navItems = [
+    {
+      href: "/dashboard",
+      label: t("navDashboard"),
+      icon: DashboardSquare01Icon,
+    },
+    { href: "/", label: t("navReceipts"), icon: Invoice01Icon },
+    { href: "/settings", label: t("navSettings"), icon: Settings01Icon },
+  ];
 
   async function handleSignOut() {
     try {
@@ -72,10 +78,10 @@ export function AppSidebar({ me }: { me: Me }) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("workspace")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
@@ -108,11 +114,11 @@ export function AppSidebar({ me }: { me: Me }) {
           <DropdownMenuContent align="start" side="top">
             <DropdownMenuItem onClick={toggleTheme}>
               <HugeiconsIcon icon={dark ? Sun01Icon : Moon01Icon} />
-              Toggle theme
+              {t("toggleTheme")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>
               <HugeiconsIcon icon={Logout01Icon} />
-              Sign out
+              {t("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
