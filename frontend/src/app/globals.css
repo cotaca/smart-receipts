@@ -49,6 +49,11 @@
 }
 
 :root {
+  /* Tells the browser which palette to paint native UI in -- scrollbars,
+     the date input's picker, form control chrome. Without it those stay
+     light even under .dark, which is why the dialog's scroll bar looked
+     pasted on. Theme-wide fix, not a per-element override. */
+  color-scheme: light;
   --background: #f8f5fa;
   --foreground: #150e1b;
   --card: #f8f5fa;
@@ -88,6 +93,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #08050a;
   --foreground: #ebe4f1;
   --card: color-mix(in oklch, var(--foreground) 8%, var(--background));
