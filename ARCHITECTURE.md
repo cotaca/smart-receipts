@@ -22,6 +22,7 @@ Custom JWT auth via FastAPI (no third-party auth service for now). OAuth/social 
 | created_at | datetime | default `utcnow` |
 | number_format | str | default `"de-DE"`; account setting, see Settings below |
 | default_currency | str | default `"EUR"`; account setting, see Settings below |
+| language | str | default `"de"`; UI language, account setting, see Settings below |
 
 **Endpoints** (`routers/auth.py`)
 
@@ -38,8 +39,8 @@ Custom JWT auth via FastAPI (no third-party auth service for now). OAuth/social 
 **Schemas** (`/schemas`, since none map 1:1 to the table)
 
 - `RegisterRequest` / `LoginRequest`: `email`, `password` (plain)
-- `UserPublic`: `id`, `email`, `is_active`, `created_at`, `number_format`, `default_currency` — explicitly excludes `hashed_password`
-- `UserSettingsUpdate`: `number_format` (`Literal["de-DE", "en-US"]`), `default_currency` (`Literal["EUR", "USD", "GBP", "CHF"]`) — both optional, partial update, same pattern as `ReceiptUpdate`. The `Literal`s are the trust boundary; there's no DB `CHECK` constraint because `PATCH /auth/me` is the only write path
+- `UserPublic`: `id`, `email`, `is_active`, `created_at`, `number_format`, `default_currency`, `language` — explicitly excludes `hashed_password`
+- `UserSettingsUpdate`: `number_format` (`Literal["de-DE", "en-US"]`), `default_currency` (`Literal["EUR", "USD", "GBP", "CHF"]`), `language` (`Literal["de", "en"]`) — all optional, partial update, same pattern as `ReceiptUpdate`. The `Literal`s are the trust boundary; there's no DB `CHECK` constraint because `PATCH /auth/me` is the only write path
 - `ChangePasswordRequest`: `current_password`, `new_password`
 - `TokenResponse`: `access_token`, `token_type="bearer"`
 
@@ -122,6 +123,8 @@ OCR now fills `merchant`/`amount`/`purchased_at` as a form-fill suggestion on up
 - `apiFetch` skips its default `Content-Type: application/json` when the body is `FormData`, letting the browser set the multipart boundary itself — needed for the create endpoint's file upload
 - State: plain `useState` + refetch after each mutation, not TanStack Query — not enough concurrent data-fetching complexity yet to justify the dependency
 - Date input is native `<input type="date">`, currency a small `Select` with a few common codes — both deliberately minimal, upgradeable later
+- **Base UI `Select` needs `items` or its trigger shows the raw value.** `<SelectValue />` renders the selected item's *label* only when the matching `Select` (i.e. `Select.Root`) also gets an `items` prop; without it Base UI falls back to the raw `value`, so the period and sort filters displayed `all` / `this-month` / `amount-desc` in the trigger while the popup showed proper labels. It went unnoticed before i18n because the internal values read as English words — switching the UI to German made it obvious. Both filters now build one `{value, label}[]` array that is passed as `items` **and** mapped into the `SelectItem`s, so the labels can't drift apart. The currency `Select`s in `settings/page.tsx` and `receipt-form-dialog.tsx` deliberately keep the bare `<SelectValue />`: there the raw value *is* the wanted display (`EUR`), and it needs no translation
+- **A `Select` popup clips options longer than the selected one.** `SelectContent` (`components/ui/select.tsx`) is `w-(--anchor-width)` — pinned to the trigger's width — and the trigger is `w-fit`, so the popup is only ever as wide as the *currently selected* label. German labels made this visible: with “Neueste zuerst” selected, “Betrag (aufsteigend)” was cut off mid-word. Both receipts-page filters pass `className="w-auto min-w-(--anchor-width)"` to keep the trigger width as a floor while letting the popup grow. Fixed at the two call sites rather than in `components/ui/select.tsx`, because the trigger-width default is deliberate Base UI behavior (it mimics a native `<select>`) that the two currency selects still want — only these two have options long enough to overflow. **Not unit-tested**: jsdom applies no CSS, so a test could only assert the class string, and unlike the `md:hidden` sidebar-trigger case (where the class *is* the behavior) this is cosmetic. It lives here instead — if a future `shadcn@latest add select` regenerates the file, re-check that these overrides still work
 - List page filters (`(pages)/page.tsx`): merchant search, a period `Select` (`all | this-month | last-3-months | this-year`, default **`all`** — not "This month" like the mockup, so older receipts don't look like they vanished on open), and a sort `Select` (`newest | oldest | amount-desc | amount-asc`) are all `useMemo` derivations over the already-fetched `receipts` array — no query params on `GET /receipts`, no debounce, native `Date` comparisons (no date library). The header's summary line ("N receipts · X.XX CUR tracked") is the account-wide total (unaffected by the active filters) and is only shown when every receipt shares one `currency` — mixed currencies mean no summary line rather than a wrong summed total
 
 **Future: PDF upload** (not built yet, design-only)
@@ -141,11 +144,13 @@ OCR now fills `merchant`/`amount`/`purchased_at` as a form-fill suggestion on up
 
 ## Settings
 
-Implemented and tested. Two account-wide settings — `number_format` and `default_currency` — live as columns on `users` (see Auth above) and are edited via `PATCH /auth/me`. Deliberately **not** in scope: a language/i18n field (no locale strings extracted anywhere yet), account deletion, and a sign-out control on the settings screen (it already exists, tested, in the sidebar footer — see Auth above — not duplicated here).
+Implemented and tested. Three account-wide settings — `number_format`, `default_currency` and `language` — live as columns on `users` (see Auth above) and are edited via `PATCH /auth/me`. Deliberately **not** in scope: account deletion, and a sign-out control on the settings screen (it already exists, tested, in the sidebar footer — see Auth above — not duplicated here).
 
-- **Theme stays per-device**, not promoted to an account setting — the mockup's copy ("Applies on every device...") doesn't match this decision and was rewritten in the shipped screen to "Stored on this device only — sign in elsewhere and you'll need to set it again."
+- **Theme stays per-device**, not promoted to an account setting — the mockup's copy ("Applies on every device...") doesn't match this decision. The Appearance card description was neutralized to "How the app looks and reads." and the device-vs-account distinction moved into each row's own sub-line instead: the Theme row says "System follows your OS setting — stored on this device only", the Language row says "Applies to your account, wherever you sign in."
 - **`useTheme` is now a tri-state store** (`"light" | "dark" | "system"`, `src/hooks/use-theme.ts`), not a boolean. `"system"` has no explicit localStorage value — the mode *is* "system" whenever the `theme` key is absent, and switching to it just removes the key rather than writing a third sentinel value. Split into two independent `useSyncExternalStore`s: one snapshotting the stored mode (string, changes via `storage` events — including a manually dispatched one, since `localStorage.setItem` doesn't fire `storage` in the same tab that wrote it), one snapshotting `matchMedia("(prefers-color-scheme: dark)").matches` (plain boolean, changes via the media query's own `change` event). Kept as two stores instead of one combined `{mode, osDark}` snapshot because `useSyncExternalStore` compares snapshots with `Object.is` — a getSnapshot returning a fresh object every call never compares equal and re-renders (or loops) every time it's read. The resolved `dark` boolean is derived from both in the hook body, and a `useEffect` keyed on that boolean applies/removes the `dark` class — covers mount, a mode switch, and a live OS preference change while in `"system"`. `toggleTheme`/`dark` are kept on the return value alongside the new `mode`/`setTheme` so `app-sidebar.tsx`'s existing footer toggle (light/dark only, no UI for three states) didn't need to change
 - **`formatAmount(amount, numberFormat)`** (`src/lib/utils.ts`) is a one-line wrapper over `Intl.NumberFormat(numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount))` — `number_format` stores the **locale string** itself (`"de-DE"`/`"en-US"`), not a separator enum, specifically so the frontend can hand it straight to `Intl` with no mapping table on either side. Applied everywhere an amount was previously rendered raw: `receipts-table.tsx`, the receipts-page summary line, and the delete-confirmation preview line in `(pages)/page.tsx`
+- **UI language via `next-intl`, no locale routing.** No `/de`/`/en` URL prefixes, no middleware, no `[locale]` segment — the active locale comes from a `locale` cookie read server-side in `src/i18n/request.ts` (`getRequestConfig`). Message catalogs live in `frontend/messages/{de,en}.json`, one namespace per page/component (`useTranslations("SettingsPage")`, etc.) rather than one flat catalog, matching the existing feature-based component split. A `Common` namespace was deliberately **not** created — no string repeats identically at 3+ call sites, so it would just be a flat catalog with an extra lookup step. Date/amount formatting stays keyed to `number_format`, not `language` (see the `formatAmount` bullet above) — they're independent settings; a German-speaking user shopping in the US still wants US-formatted amounts if they set `number_format` that way. This is why the receipts-page summary line passes its amount into the catalog **already formatted** by `formatAmount`: the message is an ICU one (`{count, plural, one {# receipt} other {# receipts}} · <mono>{amount}</mono> tracked`, rendered with `t.rich()` so the `font-mono` span stays inside the sentence rather than splitting it into two word-order-locked fragments), but next-intl's own number formatter is never used — it would key off `language` and quietly undo the separation. The plural is not cosmetic: the pre-i18n line hardcoded `{n} receipts` and rendered “1 receipts”
+- **Cookie sync and the refresh-loop guard** (`src/lib/locale.ts`, `syncLocaleCookie`). On first load without a cookie, the server guesses the locale from `Accept-Language` and the client hydrates with the same value — no mismatch, since both come from the same request config. `useAuthGuard` then fetches the real account `language` via `getMe()`; if it differs from the cookie, `syncLocaleCookie` writes the cookie and **reads it back** to confirm the write landed before returning `true` — only a confirmed write triggers `router.refresh()`. This matters because the write happens client-side (not httpOnly) and fails silently if cookies are blocked: without the read-back check, a blocked cookie would leave the mismatch in place forever and `router.refresh()` would fire on every render (`getMe()` → mismatch → refresh → `getMe()` → mismatch → ...). If cookies stay blocked, the account setting is still the source of truth — Settings shows the correct value, only the *rendered* language lags, and it's display-only (decision above keeps amounts/dates unaffected). It self-heals on the next full page load. `router.refresh()`, not `location.reload()`, re-renders the server components (root layout, `NextIntlClientProvider`, metadata) while keeping the in-memory access token alive; a full reload would discard it and force a second silent refresh. The Settings language `Tabs` reuses the same `syncLocaleCookie` + `router.refresh()` path after a confirmed `PATCH /auth/me`. The cookie is deliberately **not** cleared on logout — it's a device preference for the login page, and the next login corrects it if it's stale
 - **`MeContext`** (`src/lib/me-context.tsx`, `MeProvider`/`useMe`) exists because Next.js layouts can't pass props down to the pages they wrap — `(pages)/layout.tsx` already fetches `me` for the sidebar via `useAuthGuard`, but `(pages)/page.tsx` and `receipts-table.tsx` had no way to read it for `formatAmount`/`default_currency` without either prop-drilling through every route or refetching. `useAuthGuard` now also returns `setMe`, and `(pages)/layout.tsx` wraps its children in `MeProvider` with both — the settings page calls `setMe` with the server's response after a confirmed `PATCH /auth/me`, so a new default currency is immediately visible in the receipt form without a refetch. No state-management package: it's one `createContext`/`useContext` pair, ~20 lines
 - **`receipt-form-dialog.tsx` stays props-only** (its existing interface) — the create/edit dialog takes a new `defaultCurrency` prop from the calling page's `useMe()` instead of reading the context itself, so the dialog's dependency surface doesn't grow
 - **"Saved automatically", no Save button, no optimistic update**: the number-format `Tabs` and currency `Select` in `/settings` are controlled directly by `me.number_format`/`me.default_currency` from context. `onValueChange` fires the `PATCH` immediately; the displayed value only moves once `setMe` runs with the server's response, so the screen never shows a selection that isn't actually persisted. A failed `PATCH` surfaces as an `Alert` and leaves the previous value in place
@@ -187,7 +192,7 @@ Split into two functions, same reasoning as `image_processing.py`'s standalone `
 - `parse_receipt_text(text: str) -> ReceiptExtraction` — pure, takes already-OCR'd text and applies the heuristics below. Deterministic, unit-tested without a Tesseract binary
 - `extract_receipt_data(content: bytes) -> ReceiptExtraction` — runs `preprocess_image()` first (EXIF rotation matters for OCR accuracy, not just display), then `pytesseract.image_to_string(image, lang="deu")`, then `parse_receipt_text`. Raises whatever `preprocess_image` raises, plus `pytesseract.TesseractNotFoundError`
 
-Heuristics (German-only, no i18n yet):
+Heuristics (German-only, no i18n yet — see "Future: OCR language" below):
 
 - **Amount**: scans lines for `TOTAL_KEYWORDS = ("SUMME", "GESAMT", "ZU ZAHLEN", "ENDBETRAG")`, case-insensitive, excluding lines containing `ZWISCHENSUMME` (a substring match on `SUMME` would otherwise catch it). Takes the **last** matching line (the final total prints after any subtotals). Regex is `(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}` — either a real thousands grouping or an arbitrarily long ungrouped run of digits. A naive `\d{1,3}(?:\.\d{3})*,\d{2}` only matches `234,56` out of `SUMME 1234,56` (the `\d{1,3}` greedily caps at 3 digits and the grouping is optional) — four-digit totals without a thousands separator are common on receipts, and a wrong amount is worse than a missing one on a money field. If the keyword line itself has no number, checks the next non-empty line (printers wrap). No match anywhere → `None`, no "largest number in the text" fallback. **`BETRAG` is deliberately absent** from the keyword list: it is a substring of `Rabattbetrag`, `Nettobetrag`, `Steuerbetrag` and `Rechnungsbetrag`, which print *after* the total — combined with "last match wins" that silently returned a discount of 2,00 € instead of a 20,00 € total. `Gesamtbetrag` stays covered via `GESAMT`, `Endbetrag` via `ENDBETRAG`, so nothing is lost
 - **Date**: `\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b` over the whole text, first match that's both syntactically and *calendarically* valid (`date(...)` in a try/except skips `99.99.2024` and keeps scanning). Two-digit year → `2000 + yy`. No match → `None`
@@ -197,6 +202,40 @@ Heuristics (German-only, no i18n yet):
 Tests: `tests/test_ocr.py` exercises `parse_receipt_text` directly (no Tesseract needed); `tests/test_receipt_extraction.py` mocks `backend.services.ocr.pytesseract.image_to_string` for the endpoint and asserts nothing is persisted (`storage_backend.save` not called, `GET /receipts` stays empty). `TesseractNotFoundError` has no endpoint test — `httpx.ASGITransport` runs with `raise_app_exceptions=True`, so an uncaught exception propagates out of the test client instead of coming back as a response.
 
 **Tesseract must be installed locally to run `extract_receipt_data` for real** (native `uv run pytest` mocks it, so this doesn't block local test runs) — either install the OS package, or use the `backend` Docker service below, which bakes it into the image.
+
+### Future: OCR language
+
+Checked and deliberately deferred when the frontend `language` account setting was
+added (see Settings above). The UI language and the OCR language are **not the
+same setting** — `language` is what the interface reads in; the OCR language is
+the language *printed on the receipt itself*. A German-speaking user shopping
+abroad still has German as their UI language but an English (or French, or
+Spanish) receipt — defaulting OCR to the UI language would silently be wrong for
+exactly that case. The real fix is language detection on the recognized text, or
+a per-upload choice, not a hook driven by `language`.
+
+Switching `pytesseract.image_to_string(..., lang=...)` to `"eng"` alone is not
+enough — `parse_receipt_text` (`backend/src/backend/services/ocr.py`) is
+hardcoded to German in three independent places, and fixing only the Tesseract
+language argument would produce cleanly recognized English text that the parser
+then discards entirely, which is worse than today's behavior because it looks
+supported:
+
+- `TOTAL_KEYWORDS = ("SUMME", "GESAMT", "ZU ZAHLEN", "ENDBETRAG")` — none of these
+  match an English receipt's `TOTAL` / `AMOUNT DUE` / `BALANCE`
+- `AMOUNT_PATTERN` expects `1.234,56` (period groups, comma is the decimal
+  separator); an English receipt prints `1,234.56` and never matches
+- `DATE_PATTERN` expects `dd.mm.yyyy`; English receipts print `mm/dd/yyyy` or
+  `dd/mm/yyyy`, which is additionally ambiguous without knowing the source locale
+
+Full scope, if this gets built: a second `lang="eng"` code path through
+`extract_receipt_data`, `tesseract-ocr-eng` added to `backend/Dockerfile` and
+`.github/workflows/backend.yml`, a second set of `parse_receipt_text` heuristics
+and tests, and a decision on how the language is chosen (detected vs. selected
+per upload). No hook, parameter or `Protocol` abstraction was added ahead of
+this — same reasoning as `preprocess_image` and `parse_receipt_text` above: an
+abstraction with one implementation is speculative until the second language
+actually exists.
 
 
 ## UI Design Reference
@@ -237,9 +276,11 @@ primitives are still missing from `frontend/src/components/ui/`.
 Screens: Auth, Dashboard, ReceiptsToday, ReceiptsDesktop, ReceiptsMobile,
 UploadInline, UploadReview, Detail, Delete, Settings. Auth, ReceiptsToday, Delete,
 UploadReview and Settings are **implemented** (see Auth, Receipts and Settings sections
-above) — Settings kept its three cards (Appearance, Amounts, Account) but dropped the
-Language row (no i18n yet), the Sign out row (already lives in the sidebar footer, not
-duplicated) and the Delete account row (out of scope). ReceiptsDesktop contributed only
+above) — Settings kept its three cards (Appearance, Amounts, Account), including the
+Language row in Appearance (see Settings above; the mockup's placeholder copy "German
+is next in the i18n queue" is now built), but dropped the Sign out row (already lives
+in the sidebar footer, not duplicated) and the Delete account row (out of scope).
+ReceiptsDesktop contributed only
 its **sidebar shell** (`app-shell.tsx`/`app-sidebar.tsx`) — its filter chrome (breadcrumb,
 pagination, date/amount range popovers, PDF badge column, notes column) is still
 mockup-only, since the live filters are the simpler client-side set described under
