@@ -230,3 +230,13 @@ export async function getReceiptImageObjectUrl(id: string): Promise<string> {
   const blob = await apiFetchBlob(`/receipts/${id}/image`);
   return URL.createObjectURL(blob);
 }
+
+export function replaceReceiptImage(id: string, file: File) {
+  const formData = new FormData();
+  formData.set("file", file);
+
+  return apiFetch<ReceiptPublic>(`/receipts/${id}/image`, {
+    method: "PUT",
+    body: formData,
+  });
+}

@@ -2,8 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { useTranslations } from "next-intl";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ImageUpload01Icon, ZoomInAreaIcon } from "@hugeicons/core-free-icons";
 
-import { ReceiptImage } from "@/components/receipts/receipt-image";
+import {
+  ReceiptImage,
+  refreshReceiptImage,
+  useReceiptImageUrl,
+} from "@/components/receipts/receipt-image";
+import { ReceiptZoomView } from "@/components/receipts/receipt-zoom-view";
 import { formatAmount } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +40,7 @@ import {
   ApiError,
   createReceipt,
   extractReceipt,
+  replaceReceiptImage,
   updateReceipt,
   type ReceiptExtraction,
   type ReceiptPublic,
@@ -87,7 +95,7 @@ export function ReceiptFormDialog({
 }: ReceiptFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         {/* Keyed by receipt id (or "create") and only mounted while open, so
             switching targets or reopening always starts from fresh state —
             no effect needed to sync form fields from props. */}
@@ -135,8 +143,15 @@ function ReceiptForm({
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isReplacingImage, setIsReplacingImage] = useState(false);
   const [extraction, setExtraction] = useState<ReceiptExtraction | null>(null);
   const [error, setError] = useState("");
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit mode reuses the same cached object URL ReceiptImage displays, so
+  // the zoom overlay never triggers a second network fetch.
+  const editImageUrl = useReceiptImageUrl(receipt?.id ?? "");
 
   // Local object URL for the create-mode preview. Created during render via
   // useMemo (not useState+useEffect — that would call setState synchronously
@@ -179,6 +194,23 @@ function ReceiptForm({
       // manual entry keeps working exactly as before.
     } finally {
       setIsExtracting(false);
+    }
+  }
+
+  async function handleReplaceImage(selected: File | null) {
+    if (!receipt || !selected || isReplacingImage) return;
+
+    setIsReplacingImage(true);
+    setError("");
+    try {
+      const updated = await replaceReceiptImage(receipt.id, selected);
+      await refreshReceiptImage(receipt.id);
+      onSaved(updated);
+      // Dialog stays open -- this is its own request, separate from Save.
+    } catch {
+      setError(t("replaceImageError"));
+    } finally {
+      setIsReplacingImage(false);
     }
   }
 
@@ -243,26 +275,30 @@ function ReceiptForm({
           <span className="text-destructive">*</span> {t("required")}
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
+        <div className="grid gap-4 sm:grid-cols-[280px_1fr]">
           {/* Preview column */}
           <div className="flex flex-col gap-2">
             {isEdit && receipt ? (
-              <ReceiptImage
-                receiptId={receipt.id}
-                alt={receipt.merchant}
-                className="aspect-square w-full rounded-lg"
-              />
+              <div className="h-96 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin]">
+                <ReceiptImage
+                  receiptId={receipt.id}
+                  alt={receipt.merchant}
+                  className="h-auto w-full"
+                />
+              </div>
             ) : previewUrl ? (
               // Local blob preview — the file never left the browser yet, so
               // this can't go through ReceiptImage (which fetches from the API).
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewUrl}
-                alt={t("receiptPreviewAlt")}
-                className="aspect-square w-full rounded-lg border border-border object-cover"
-              />
+              <div className="h-96 w-full overflow-y-auto rounded-lg border border-border bg-muted [scrollbar-width:thin]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt={t("receiptPreviewAlt")}
+                  className="h-auto w-full"
+                />
+              </div>
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground">
+              <div className="flex h-96 w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground">
                 {t("noFileSelected")}
               </div>
             )}
@@ -282,15 +318,72 @@ function ReceiptForm({
                 <Label htmlFor="file">
                   {t("receiptImageLabel")} <RequiredMark />
                 </Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {file ? t("replaceFile") : t("chooseFile")}
-                  {isExtracting && <Spinner />}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {file ? t("replaceFile") : t("chooseFile")}
+                    {isExtracting && <Spinner />}
+                  </Button>
+                  {previewUrl && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomOpen(true)}
+                    >
+                      <HugeiconsIcon icon={ZoomInAreaIcon} />
+                      {t("zoom")}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isEdit && receipt && (
+              <div className="flex flex-col gap-1.5">
+                <input
+                  ref={replaceFileInputRef}
+                  id="replace-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  className="sr-only"
+                  onChange={(e) => {
+                    void handleReplaceImage(e.target.files?.[0] ?? null);
+                    e.target.value = "";
+                  }}
+                />
+                <Label htmlFor="replace-file" className="sr-only">
+                  {t("replaceFile")}
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isReplacingImage}
+                    onClick={() => replaceFileInputRef.current?.click()}
+                  >
+                    {isReplacingImage ? (
+                      <Spinner />
+                    ) : (
+                      <HugeiconsIcon icon={ImageUpload01Icon} />
+                    )}
+                    {t("replaceFile")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setZoomOpen(true)}
+                  >
+                    <HugeiconsIcon icon={ZoomInAreaIcon} />
+                    {t("zoom")}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -378,7 +471,7 @@ function ReceiptForm({
                         setCurrency(value ?? defaultCurrency)
                       }
                     >
-                      <SelectTrigger id="currency">
+                      <SelectTrigger id="currency" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -434,6 +527,29 @@ function ReceiptForm({
           </Button>
         </DialogFooter>
       </form>
+
+      {/* Zoom overlay: a second Dialog stacked over this one, sharing the
+          same image source (no second network fetch). The Dialog primitive
+          gives it its own focus trap and Escape handling, closing only this
+          top overlay and leaving the edit/create dialog open underneath. */}
+      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+        {/* Wider than the dialog underneath (sm:max-w-3xl) -- an overlay the
+            same size as its parent would not read as a zoom at all. */}
+        <DialogContent className="sm:max-w-5xl">
+          <DialogTitle className="sr-only">
+            {t("zoomTitle", { merchant: receipt?.merchant ?? merchant })}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("zoomDescription")}
+          </DialogDescription>
+          {zoomOpen && (isEdit ? editImageUrl : previewUrl) && (
+            <ReceiptZoomView
+              src={(isEdit ? editImageUrl : previewUrl) as string}
+              alt=""
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

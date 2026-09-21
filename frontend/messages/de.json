@@ -133,7 +133,16 @@
     "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "saveChanges": "Änderungen speichern",
     "upload": "Hochladen",
-    "receiptPreviewAlt": "Belegvorschau"
+    "receiptPreviewAlt": "Belegvorschau",
+    "zoom": "Vergrößern",
+    "zoomTitle": "Beleg von {merchant}, vergrößert",
+    "zoomDescription": "Mit Escape oder einem Klick daneben schließen. Zum Zoomen scrollen oder die Schaltflächen nutzen, zum Verschieben das Bild ziehen.",
+    "zoomInButton": "Vergrößern",
+    "zoomOutButton": "Verkleinern",
+    "resetZoomButton": "Zurücksetzen",
+    "zoomHintScroll": "Scrollen zum Zoomen",
+    "zoomHintDrag": "Ziehen zum Verschieben",
+    "replaceImageError": "Das Belegbild konnte nicht ersetzt werden. Bitte erneut versuchen."
   },
   "ReceiptsTable": {
     "merchant": "Händler",

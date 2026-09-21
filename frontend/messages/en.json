@@ -133,7 +133,16 @@
     "genericError": "Something went wrong. Please try again.",
     "saveChanges": "Save changes",
     "upload": "Upload",
-    "receiptPreviewAlt": "Receipt preview"
+    "receiptPreviewAlt": "Receipt preview",
+    "zoom": "Zoom",
+    "zoomTitle": "{merchant} receipt, enlarged",
+    "zoomDescription": "Press Escape or click outside to close. Scroll or use the buttons to zoom, drag the image to pan.",
+    "zoomInButton": "Zoom in",
+    "zoomOutButton": "Zoom out",
+    "resetZoomButton": "Reset",
+    "zoomHintScroll": "Scroll to zoom",
+    "zoomHintDrag": "Drag to pan",
+    "replaceImageError": "Couldn't replace the receipt image. Please try again."
   },
   "ReceiptsTable": {
     "merchant": "Merchant",
