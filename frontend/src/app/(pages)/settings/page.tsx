@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 
@@ -38,16 +40,18 @@ import {
   changePassword,
   updateMe,
   type Currency,
+  type Language,
   type NumberFormat,
 } from "@/lib/api";
+import { syncLocaleCookie } from "@/lib/locale";
 import { useMe } from "@/lib/me-context";
 import { formatAmount } from "@/lib/utils";
 
-const CURRENCIES: { code: Currency; label: string }[] = [
-  { code: "EUR", label: "Euro" },
-  { code: "USD", label: "US Dollar" },
-  { code: "GBP", label: "British Pound" },
-  { code: "CHF", label: "Swiss Franc" },
+const CURRENCIES: { code: Currency; labelKey: string }[] = [
+  { code: "EUR", labelKey: "currencyEur" },
+  { code: "USD", labelKey: "currencyUsd" },
+  { code: "GBP", labelKey: "currencyGbp" },
+  { code: "CHF", labelKey: "currencyChf" },
 ];
 
 // Fixed example, not a real receipt -- only used to render the live preview
@@ -55,6 +59,8 @@ const CURRENCIES: { code: Currency; label: string }[] = [
 const PREVIEW_AMOUNT = "1248.55";
 
 export default function SettingsPage() {
+  const t = useTranslations("SettingsPage");
+  const router = useRouter();
   const { mode, setTheme } = useTheme();
   const { me, setMe } = useMe();
   const [settingsError, setSettingsError] = useState("");
@@ -65,13 +71,19 @@ export default function SettingsPage() {
   // only moves once the server has confirmed the change, so the screen never
   // shows a selection that isn't actually persisted.
   async function saveSettings(
-    patch: Partial<Pick<typeof me, "number_format" | "default_currency">>,
+    patch: Partial<
+      Pick<typeof me, "number_format" | "default_currency" | "language">
+    >,
   ) {
     setSettingsError("");
     try {
-      setMe(await updateMe(patch));
+      const updated = await updateMe(patch);
+      setMe(updated);
+      if (patch.language && syncLocaleCookie(updated.language)) {
+        router.refresh();
+      }
     } catch {
-      setSettingsError("Couldn't save your changes. Please try again.");
+      setSettingsError(t("saveError"));
     }
   }
 
@@ -83,7 +95,7 @@ export default function SettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-8 py-7">
       <h1 className="text-lg font-semibold tracking-tight text-foreground">
-        Settings
+        {t("title")}
       </h1>
 
       {settingsError && (
@@ -95,47 +107,68 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>
-            Stored on this device only — sign in elsewhere and you&apos;ll need
-            to set it again.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-foreground">Theme</span>
-            <span className="text-[11px] text-muted-foreground">
-              System follows your OS setting
-            </span>
-          </div>
-          <Tabs
-            value={mode}
-            onValueChange={(value) => setTheme(value as ThemeMode)}
-          >
-            <TabsList>
-              <TabsTrigger value="light">Light</TabsTrigger>
-              <TabsTrigger value="dark">Dark</TabsTrigger>
-              <TabsTrigger value="system">System</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Amounts</CardTitle>
-          <CardDescription>
-            Display only — stored values stay exact decimals.
-          </CardDescription>
+          <CardTitle>{t("appearanceTitle")}</CardTitle>
+          <CardDescription>{t("appearanceDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium text-foreground">
-                Number format
+                {t("themeLabel")}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                Decimal separator for every amount
+                {t("themeHint")}
+              </span>
+            </div>
+            <Tabs
+              value={mode}
+              onValueChange={(value) => setTheme(value as ThemeMode)}
+            >
+              <TabsList>
+                <TabsTrigger value="light">{t("themeLight")}</TabsTrigger>
+                <TabsTrigger value="dark">{t("themeDark")}</TabsTrigger>
+                <TabsTrigger value="system">{t("themeSystem")}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-foreground">
+                {t("languageLabel")}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {t("languageHint")}
+              </span>
+            </div>
+            <Tabs
+              value={me.language}
+              onValueChange={(value) =>
+                saveSettings({ language: value as Language })
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="de">{t("languageDe")}</TabsTrigger>
+                <TabsTrigger value="en">{t("languageEn")}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("amountsTitle")}</CardTitle>
+          <CardDescription>{t("amountsDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-foreground">
+                {t("numberFormatLabel")}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {t("numberFormatHint")}
               </span>
             </div>
             <Tabs
@@ -158,10 +191,10 @@ export default function SettingsPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium text-foreground">
-                Default currency
+                {t("defaultCurrencyLabel")}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                Pre-selected on every new receipt
+                {t("defaultCurrencyHint")}
               </span>
             </div>
             <Select
@@ -170,13 +203,16 @@ export default function SettingsPage() {
                 value && saveSettings({ default_currency: value as Currency })
               }
             >
-              <SelectTrigger aria-label="Default currency" className="w-45">
+              <SelectTrigger
+                aria-label={t("defaultCurrencyAriaLabel")}
+                className="w-45"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CURRENCIES.map(({ code, label }) => (
+                {CURRENCIES.map(({ code, labelKey }) => (
                   <SelectItem key={code} value={code}>
-                    <span className="font-mono">{code}</span> — {label}
+                    <span className="font-mono">{code}</span> — {t(labelKey)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -184,7 +220,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-2 rounded-lg bg-muted px-2.5 py-2 text-[11px] text-muted-foreground">
-            <span>Preview</span>
+            <span>{t("preview")}</span>
             <span className="font-mono text-sm font-medium text-foreground">
               {formatAmount(PREVIEW_AMOUNT, me.number_format)}{" "}
               {me.default_currency}
@@ -195,20 +231,22 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>{t("accountTitle")}</CardTitle>
           <CardDescription>
-            {me.email} · member since {memberSince}
+            {t("accountDescription", { email: me.email, memberSince })}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-medium text-foreground">Password</span>
+          <span className="text-xs font-medium text-foreground">
+            {t("passwordLabel")}
+          </span>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setPasswordDialogOpen(true)}
           >
-            Change password
+            {t("changePassword")}
           </Button>
         </CardContent>
       </Card>
@@ -244,6 +282,7 @@ function ChangePasswordForm({
 }: {
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("SettingsPage");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -263,8 +302,8 @@ function ChangePasswordForm({
       // other status is an unrelated failure.
       setError(
         err instanceof ApiError && err.status === 400
-          ? "Current password is incorrect."
-          : "Something went wrong. Please try again.",
+          ? t("wrongCurrentPassword")
+          : t("genericError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -274,10 +313,8 @@ function ChangePasswordForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Change password</DialogTitle>
-        <DialogDescription>
-          Your other signed-in sessions stay signed in.
-        </DialogDescription>
+        <DialogTitle>{t("changePassword")}</DialogTitle>
+        <DialogDescription>{t("changePasswordDescription")}</DialogDescription>
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
@@ -289,7 +326,7 @@ function ChangePasswordForm({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="current-password">Current password</Label>
+          <Label htmlFor="current-password">{t("currentPasswordLabel")}</Label>
           <Input
             id="current-password"
             type="password"
@@ -300,7 +337,7 @@ function ChangePasswordForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="new-password">New password</Label>
+          <Label htmlFor="new-password">{t("newPasswordLabel")}</Label>
           <Input
             id="new-password"
             type="password"
@@ -313,7 +350,7 @@ function ChangePasswordForm({
         <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Spinner />}
-            Change password
+            {t("changePassword")}
           </Button>
         </DialogFooter>
       </form>

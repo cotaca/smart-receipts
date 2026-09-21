@@ -1,3 +1,7 @@
+import type { Language } from "@/lib/locale";
+
+export type { Language };
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
@@ -114,6 +118,7 @@ export type Me = {
   created_at: string;
   number_format: NumberFormat;
   default_currency: Currency;
+  language: Language;
 };
 
 export function getMe() {
@@ -121,7 +126,7 @@ export function getMe() {
 }
 
 export function updateMe(
-  patch: Partial<Pick<Me, "number_format" | "default_currency">>,
+  patch: Partial<Pick<Me, "number_format" | "default_currency" | "language">>,
 ) {
   return apiFetch<Me>("/auth/me", {
     method: "PATCH",

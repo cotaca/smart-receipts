@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getMe, refresh, setAccessToken, type Me } from "@/lib/api";
+import { syncLocaleCookie } from "@/lib/locale";
 
 // Silent-refresh check shared by every route under (pages) — called once from
 // the route group's layout instead of per-page, so a failed refresh redirects
@@ -24,6 +25,10 @@ export function useAuthGuard() {
         if (!cancelled) {
           setMe(user);
           setChecking(false);
+          // Re-renders the server components (root layout, provider,
+          // metadata) with the account's real language, without discarding
+          // the in-memory access token the way location.reload() would.
+          if (syncLocaleCookie(user.language)) router.refresh();
         }
       } catch {
         if (!cancelled) router.replace("/login");
