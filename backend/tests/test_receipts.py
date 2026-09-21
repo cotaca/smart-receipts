@@ -221,3 +221,119 @@ async def test_get_receipt_image_other_user_404(client):
     response = await client.get(f"/receipts/{receipt_id}/image", headers=other_headers)
 
     assert response.status_code == 404
+
+
+async def test_replace_receipt_image_updates_metadata(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("new-receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == receipt_id
+    assert body["original_filename"] == "new-receipt.jpg"
+    assert body["file_size"] > 0
+
+
+async def test_replace_receipt_image_deletes_old_file(client, storage_backend):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+
+    receipts_dir = storage_backend._base_path
+    files_before = list(receipts_dir.rglob("*.jpg"))
+    assert len(files_before) == 1
+
+    await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("new-receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+    )
+
+    files_after = list(receipts_dir.rglob("*.jpg"))
+    assert len(files_after) == 1
+
+
+async def test_replace_receipt_image_serves_new_bytes(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+
+    from tests.images import make_image_bytes
+
+    # A different size than RECEIPT_BYTES' default (100, 100) distinguishes
+    # "still serving the old file" from "serving the replacement".
+    new_bytes = make_image_bytes(size=(50, 50))
+    await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("new-receipt.jpg", new_bytes, "image/jpeg")},
+    )
+
+    response = await client.get(f"/receipts/{receipt_id}/image", headers=headers)
+    assert response.status_code == 200
+    fetched = Image.open(io.BytesIO(response.content))
+    assert fetched.size == (50, 50)
+
+
+async def test_replace_receipt_image_other_users_receipt_404(client):
+    owner_headers = await _register_and_auth(client, "owner@test.com")
+    other_headers = await _register_and_auth(client, "other@test.com")
+    create_response = await _create_receipt(client, owner_headers)
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=other_headers,
+        files={"file": ("new-receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+    )
+
+    assert response.status_code == 404
+
+
+async def test_replace_receipt_image_rejects_undecodable_image(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("bad.jpg", b"not-a-real-image", "image/jpeg")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_replace_receipt_image_rejects_unsupported_content_type(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("bad.txt", b"not an image", "text/plain")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_replace_receipt_image_requires_auth(client):
+    create_response = await _create_receipt(
+        client, await _register_and_auth(client, "owner@test.com")
+    )
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        files={"file": ("new-receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+    )
+
+    assert response.status_code == 401

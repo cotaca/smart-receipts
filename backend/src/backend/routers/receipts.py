@@ -195,6 +195,58 @@ def delete_receipt(
     session.commit()
 
 
+@router.put("/{receipt_id}/image", response_model=ReceiptPublic)
+async def replace_receipt_image(
+    receipt_id: uuid.UUID,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+    storage: StorageBackend = Depends(get_storage_backend),
+) -> ReceiptPublic:
+    receipt = _get_owned_receipt(receipt_id, session, current_user)
+    content = await _read_upload(file)
+
+    try:
+        processed = await run_in_threadpool(preprocess_image, content)
+    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Could not process image"
+        ) from exc
+
+    old_storage_key = receipt.storage_key
+    new_storage_key = f"{current_user.id}/{uuid.uuid4()}{processed.extension}"
+    storage.save(new_storage_key, processed.content, processed.content_type)
+
+    # Save new -> commit -> delete old, in that order: it's the only
+    # permutation where storage_key never points at a missing file. If the
+    # commit fails, the new file is orphaned (a leak, not a dangling
+    # reference) -- clean it up and re-raise.
+    try:
+        receipt.storage_key = new_storage_key
+        receipt.content_type = processed.content_type
+        receipt.file_size = len(processed.content)
+        receipt.original_filename = file.filename or "receipt"
+        session.add(receipt)
+        session.commit()
+    except Exception:
+        storage.delete(new_storage_key)
+        raise
+    session.refresh(receipt)
+
+    # Deleting the old file is best-effort: the DB row is already correctly
+    # committed to the new key, so a failure here must not turn a successful
+    # replace into an error response. LocalStorageBackend.delete practically
+    # never raises (unlink(missing_ok=True)), but StorageBackend is a
+    # Protocol meant to be swapped for a remote backend later, and a remote
+    # delete can fail.
+    try:
+        storage.delete(old_storage_key)
+    except OSError:
+        pass
+
+    return _to_public(receipt)
+
+
 @router.get("/{receipt_id}/image")
 def get_receipt_image(
     receipt_id: uuid.UUID,
