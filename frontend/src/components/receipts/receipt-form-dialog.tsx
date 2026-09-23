@@ -15,6 +15,7 @@ import { formatAmount } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -228,6 +229,13 @@ function ReceiptForm({
       return;
     }
     const normalizedAmount = normalizeAmount(amount);
+
+    // The DatePicker is a button, not a native input, so it has no `required`
+    // attribute to rely on for validation.
+    if (!purchasedAt) {
+      setError(t("selectDateError"));
+      return;
+    }
 
     setIsSubmitting(true);
     setError("");
@@ -496,13 +504,13 @@ function ReceiptForm({
                       />
                     )}
                   </div>
-                  <Input
+                  <DatePicker
                     id="purchased_at"
-                    type="date"
-                    required
                     value={purchasedAt}
-                    onChange={(e) => setPurchasedAt(e.target.value)}
-                    className="font-mono"
+                    onChange={setPurchasedAt}
+                    numberFormat={numberFormat}
+                    placeholder={t("pickDate")}
+                    className="w-full font-mono"
                   />
                 </div>
 

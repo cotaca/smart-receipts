@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@/test/render";
+import { render, screen, waitFor, within } from "@/test/render";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -68,6 +68,18 @@ async function uploadAndWaitForScan(
   await waitFor(() =>
     expect(within(dialog).getByLabelText(/^Merchant/)).toBeInTheDocument(),
   );
+}
+
+// Opens the date picker and picks today -- these tests don't care which date
+// ends up in the field, just that one gets picked. The popover renders via a
+// portal outside `dialog`, so the day button is queried from the whole
+// document; "Today, ..." is the accessible name react-day-picker gives it.
+async function pickDate(
+  dialog: HTMLElement,
+  user: ReturnType<typeof userEvent.setup>,
+) {
+  await user.click(within(dialog).getByLabelText(/^Purchase date/));
+  await user.click(await screen.findByRole("button", { name: /^Today,/ }));
 }
 
 describe("ReceiptsPage", () => {
@@ -253,17 +265,65 @@ describe("ReceiptsPage", () => {
 
     await user.type(within(dialog).getByLabelText(/^Merchant/), "Trader Joe's");
     await user.type(within(dialog).getByLabelText(/^Amount/), "12.34");
-    // Native <input type="date"> has a segmented UI that user.type() can't
-    // drive reliably — set the value directly instead.
-    fireEvent.change(within(dialog).getByLabelText(/^Purchase date/), {
-      target: { value: "2024-01-15" },
-    });
+    await pickDate(dialog, user);
 
     await user.click(within(dialog).getByRole("button", { name: "Upload" }));
 
     await waitFor(() => expect(api.createReceipt).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+  });
+
+  it("navigates the date picker via caption → month → year to pick a specific date", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+    vi.spyOn(api, "extractReceipt").mockResolvedValue(NO_EXTRACTION);
+    vi.spyOn(api, "createReceipt").mockResolvedValue(RECEIPT);
+
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("No receipts yet")).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Upload your first receipt" }),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await uploadAndWaitForScan(dialog, user, file);
+
+    await user.type(within(dialog).getByLabelText(/^Merchant/), "Trader Joe's");
+    await user.type(within(dialog).getByLabelText(/^Amount/), "12.34");
+
+    await user.click(within(dialog).getByLabelText(/^Purchase date/));
+    await user.click(
+      await screen.findByRole("button", { name: /Choose month/ }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /Choose year/ }),
+    );
+
+    // "Previous years" paging is only needed if the current run's year isn't
+    // already on the same 12-year page as 2024.
+    let yearButton = screen.queryByRole("button", { name: "2024" });
+    while (!yearButton) {
+      await user.click(screen.getByRole("button", { name: "Previous years" }));
+      yearButton = screen.queryByRole("button", { name: "2024" });
+    }
+    await user.click(yearButton);
+    await user.click(await screen.findByRole("button", { name: "Jan" }));
+    await user.click(
+      await screen.findByRole("button", { name: /January 15th, 2024/ }),
+    );
+
+    await user.click(within(dialog).getByRole("button", { name: "Upload" }));
+
+    await waitFor(() =>
+      expect(api.createReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({ purchased_at: "2024-01-15" }),
+      ),
     );
   });
 
@@ -288,9 +348,7 @@ describe("ReceiptsPage", () => {
 
     await user.type(within(dialog).getByLabelText(/^Merchant/), "Trader Joe's");
     await user.type(within(dialog).getByLabelText(/^Amount/), "12,34");
-    fireEvent.change(within(dialog).getByLabelText(/^Purchase date/), {
-      target: { value: "2024-01-15" },
-    });
+    await pickDate(dialog, user);
 
     await user.click(within(dialog).getByRole("button", { name: "Upload" }));
 
@@ -322,9 +380,7 @@ describe("ReceiptsPage", () => {
 
     await user.type(within(dialog).getByLabelText(/^Merchant/), "Trader Joe's");
     await user.type(within(dialog).getByLabelText(/^Amount/), "not-a-number");
-    fireEvent.change(within(dialog).getByLabelText(/^Purchase date/), {
-      target: { value: "2024-01-15" },
-    });
+    await pickDate(dialog, user);
 
     await user.click(within(dialog).getByRole("button", { name: "Upload" }));
 

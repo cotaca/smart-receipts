@@ -26,6 +26,7 @@ function renderDialog(
   receipt: ReceiptPublic | undefined,
   onSaved = vi.fn(),
   onOpenChange = vi.fn(),
+  numberFormat = "en-US",
 ) {
   render(
     <ReceiptFormDialog
@@ -33,7 +34,7 @@ function renderDialog(
       onOpenChange={onOpenChange}
       receipt={receipt}
       defaultCurrency="EUR"
-      numberFormat="en-US"
+      numberFormat={numberFormat}
       onSaved={onSaved}
     />,
   );
@@ -140,5 +141,89 @@ describe("ReceiptFormDialog image controls", () => {
     // Asserting the edit form is still mounted is what proves it -- without
     // this, the test above passes just as happily if both dialogs closed.
     expect(screen.getByLabelText(/Merchant/)).toBeInTheDocument();
+  });
+});
+
+describe("ReceiptFormDialog date picker", () => {
+  it("shows the trigger formatted per number format", () => {
+    renderDialog(RECEIPT, undefined, undefined, "de-DE");
+    // The Label's `htmlFor` makes "Purchase date" the button's accessible
+    // name, so the formatted date is asserted via its text content instead.
+    expect(
+      screen.getByRole("button", { name: "Purchase date" }),
+    ).toHaveTextContent("15.01.2024");
+  });
+
+  it("shows the trigger formatted for en-US", () => {
+    renderDialog(RECEIPT, undefined, undefined, "en-US");
+    expect(
+      screen.getByRole("button", { name: "Purchase date" }),
+    ).toHaveTextContent("01/15/2024");
+  });
+
+  it("disables future days, months and years", async () => {
+    vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
+    const receipt = { ...RECEIPT, purchased_at: "2024-06-01" };
+    renderDialog(receipt);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Purchase date" }));
+
+    expect(
+      await screen.findByRole("button", { name: /June 20th, 2024/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Go to the Next Month" }),
+    ).toHaveAttribute("aria-disabled", "true");
+
+    await user.click(screen.getByRole("button", { name: /June 2024/ }));
+    expect(screen.getByRole("button", { name: "Jul" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Jan" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: /2024, Choose year/ }));
+    expect(screen.getByRole("button", { name: "2025" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "2023" })).toBeEnabled();
+
+    vi.useRealTimers();
+  });
+
+  it("closes the popover after picking a day", async () => {
+    renderDialog(RECEIPT);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Purchase date" }));
+    await user.click(
+      await screen.findByRole("button", { name: /January 20th, 2024/ }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /January 20th, 2024/ }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("shows an error and skips the API call when no date is picked", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+    });
+    vi.spyOn(api, "createReceipt");
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+    await screen.findByLabelText(/^Merchant/);
+
+    await user.type(screen.getByLabelText(/^Merchant/), "Trader Joe's");
+    await user.type(screen.getByLabelText(/^Amount/), "12.34");
+    await user.click(screen.getByRole("button", { name: "Upload" }));
+
+    expect(
+      await screen.findByText("Please select a purchase date"),
+    ).toBeInTheDocument();
+    expect(api.createReceipt).not.toHaveBeenCalled();
   });
 });
