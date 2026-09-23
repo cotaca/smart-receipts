@@ -127,7 +127,9 @@
     "purchaseDateLabel": "Kaufdatum",
     "notesLabel": "Notizen",
     "notesPlaceholder": "Optional",
+    "pickDate": "Datum wählen",
     "selectImageError": "Bitte ein Belegbild auswählen",
+    "selectDateError": "Bitte ein Kaufdatum wählen",
     "invalidAmountError": "Bitte einen gültigen Betrag eingeben (z. B. 12,34 oder 12.34)",
     "saveError": "Beleg konnte nicht gespeichert werden. Bitte Angaben prüfen und erneut versuchen.",
     "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
@@ -151,5 +153,11 @@
     "actionsAriaLabel": "Belegaktionen",
     "edit": "Bearbeiten",
     "delete": "Löschen"
+  },
+  "DatePicker": {
+    "chooseMonth": "Monat wählen",
+    "chooseYear": "Jahr wählen",
+    "previousYears": "Frühere Jahre",
+    "nextYears": "Spätere Jahre"
   }
 }

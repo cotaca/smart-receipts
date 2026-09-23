@@ -127,7 +127,9 @@
     "purchaseDateLabel": "Purchase date",
     "notesLabel": "Notes",
     "notesPlaceholder": "Optional",
+    "pickDate": "Pick a date",
     "selectImageError": "Please select a receipt image",
+    "selectDateError": "Please select a purchase date",
     "invalidAmountError": "Please enter a valid amount (e.g. 12.34 or 12,34)",
     "saveError": "Couldn't save the receipt. Please check the details and try again.",
     "genericError": "Something went wrong. Please try again.",
@@ -151,5 +153,11 @@
     "actionsAriaLabel": "Receipt actions",
     "edit": "Edit",
     "delete": "Delete"
+  },
+  "DatePicker": {
+    "chooseMonth": "Choose month",
+    "chooseYear": "Choose year",
+    "previousYears": "Previous years",
+    "nextYears": "Next years"
   }
 }
