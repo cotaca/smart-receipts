@@ -32,6 +32,7 @@ function receipt(overrides: Partial<ReceiptPublic>): ReceiptPublic {
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     image_url: "/receipts/r1/image",
+    items: [],
     ...overrides,
   };
 }

@@ -20,6 +20,7 @@ const RECEIPT: ReceiptPublic = {
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
   image_url: "/receipts/r1/image",
+  items: [],
 };
 
 function renderDialog(
@@ -67,6 +68,8 @@ describe("ReceiptFormDialog image controls", () => {
       merchant: null,
       amount: null,
       purchased_at: null,
+      items: [],
+      low_quality: false,
     });
     const user = userEvent.setup();
     await user.upload(screen.getByLabelText(/^Receipt image/), file);
@@ -208,6 +211,8 @@ describe("ReceiptFormDialog date picker", () => {
       merchant: null,
       amount: null,
       purchased_at: null,
+      items: [],
+      low_quality: false,
     });
     vi.spyOn(api, "createReceipt");
     renderDialog(undefined);
@@ -225,5 +230,200 @@ describe("ReceiptFormDialog date picker", () => {
       await screen.findByText("Please select a purchase date"),
     ).toBeInTheDocument();
     expect(api.createReceipt).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReceiptFormDialog low-quality hint", () => {
+  it("shows the hint when the extraction is flagged low_quality", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+      items: [],
+      low_quality: true,
+    });
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+
+    expect(
+      await screen.findByText("This image is hard to read"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the hint when the extraction is not flagged low_quality", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+      items: [],
+      low_quality: false,
+    });
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+    await screen.findByLabelText(/^Merchant/);
+
+    expect(
+      screen.queryByText("This image is hard to read"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("ReceiptFormDialog line items", () => {
+  it("shows the existing items in edit mode", async () => {
+    const receipt = {
+      ...RECEIPT,
+      items: [
+        {
+          description: "Milch",
+          quantity: "2.000",
+          unit_price: "1.29",
+          total_price: "2.58",
+        },
+      ],
+    };
+    renderDialog(receipt);
+
+    expect(await screen.findByLabelText("Item 1 description")).toHaveValue(
+      "Milch",
+    );
+    expect(screen.getByLabelText("Item 1 quantity")).toHaveValue("2.000");
+    expect(screen.getByLabelText("Item 1 unit price")).toHaveValue("1.29");
+    expect(screen.getByLabelText("Item 1 total")).toHaveValue("2.58");
+  });
+
+  it("fills the item table from extraction", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+      items: [
+        {
+          description: "Milch",
+          quantity: "1",
+          unit_price: "1.29",
+          total_price: "1.29",
+        },
+      ],
+      low_quality: false,
+    });
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+    await screen.findByLabelText(/^Merchant/);
+
+    expect(screen.getByLabelText("Item 1 description")).toHaveValue("Milch");
+  });
+
+  it("does not overwrite rows the user already added with extraction results", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+      items: [
+        {
+          description: "Milch",
+          quantity: "1",
+          unit_price: "1.29",
+          total_price: "1.29",
+        },
+      ],
+      low_quality: false,
+    });
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.type(
+      screen.getByLabelText("Item 1 description"),
+      "Hand-typed item",
+    );
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+    await screen.findByLabelText(/^Merchant/);
+
+    expect(screen.getByLabelText("Item 1 description")).toHaveValue(
+      "Hand-typed item",
+    );
+  });
+
+  it("adds and removes item rows", async () => {
+    renderDialog(RECEIPT);
+    const user = userEvent.setup();
+
+    expect(screen.getByText("No line items.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    expect(screen.getByLabelText("Item 1 description")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Remove item 1" }));
+    expect(screen.getByText("No line items.")).toBeInTheDocument();
+  });
+
+  it("recomputes the total when quantity or unit price changes", async () => {
+    renderDialog(RECEIPT);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.type(screen.getByLabelText("Item 1 quantity"), "2");
+    await user.type(screen.getByLabelText("Item 1 unit price"), "1.5");
+
+    expect(screen.getByLabelText("Item 1 total")).toHaveValue("3.00");
+  });
+
+  it("shows an error and skips the API call for an invalid item row", async () => {
+    vi.spyOn(api, "updateReceipt");
+    renderDialog(RECEIPT);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.type(screen.getByLabelText("Item 1 quantity"), "1");
+    await user.type(screen.getByLabelText("Item 1 unit price"), "1.29");
+    await user.type(screen.getByLabelText("Item 1 total"), "1.29");
+    // No description -- the row is not empty, so it must be complete.
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(
+      await screen.findByText(/Please check the line items/),
+    ).toBeInTheDocument();
+    expect(api.updateReceipt).not.toHaveBeenCalled();
+  });
+
+  it("sends normalized items on save", async () => {
+    vi.spyOn(api, "updateReceipt").mockResolvedValue(RECEIPT);
+    renderDialog(RECEIPT);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.type(screen.getByLabelText("Item 1 description"), "Milch");
+    await user.type(screen.getByLabelText("Item 1 quantity"), "2");
+    await user.type(screen.getByLabelText("Item 1 unit price"), "1,29");
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() =>
+      expect(api.updateReceipt).toHaveBeenCalledWith(
+        RECEIPT.id,
+        expect.objectContaining({
+          items: [
+            {
+              description: "Milch",
+              quantity: "2",
+              unit_price: "1.29",
+              total_price: "2.58",
+            },
+          ],
+        }),
+      ),
+    );
   });
 });

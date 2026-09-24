@@ -144,6 +144,13 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+export type ReceiptItem = {
+  description: string;
+  quantity: string;
+  unit_price: string;
+  total_price: string;
+};
+
 export type ReceiptPublic = {
   id: string;
   original_filename: string;
@@ -157,6 +164,7 @@ export type ReceiptPublic = {
   created_at: string;
   updated_at: string;
   image_url: string;
+  items: ReceiptItem[];
 };
 
 export type ReceiptCreateInput = {
@@ -166,6 +174,7 @@ export type ReceiptCreateInput = {
   purchased_at: string;
   currency: string;
   notes?: string;
+  items?: ReceiptItem[];
 };
 
 export type ReceiptUpdateInput = Partial<{
@@ -174,6 +183,7 @@ export type ReceiptUpdateInput = Partial<{
   currency: string;
   purchased_at: string;
   notes: string | null;
+  items: ReceiptItem[];
 }>;
 
 export function listReceipts() {
@@ -188,6 +198,8 @@ export type ReceiptExtraction = {
   merchant: string | null;
   amount: string | null;
   purchased_at: string | null;
+  items: ReceiptItem[];
+  low_quality: boolean;
 };
 
 export function extractReceipt(file: File) {
@@ -208,6 +220,7 @@ export function createReceipt(input: ReceiptCreateInput) {
   formData.set("purchased_at", input.purchased_at);
   formData.set("currency", input.currency);
   if (input.notes) formData.set("notes", input.notes);
+  formData.set("items", JSON.stringify(input.items ?? []));
 
   return apiFetch<ReceiptPublic>("/receipts", {
     method: "POST",

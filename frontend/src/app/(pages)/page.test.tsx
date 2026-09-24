@@ -30,6 +30,8 @@ const NO_EXTRACTION: ReceiptExtraction = {
   merchant: null,
   amount: null,
   purchased_at: null,
+  items: [],
+  low_quality: false,
 };
 
 function receipt(overrides: Partial<ReceiptPublic>): ReceiptPublic {
@@ -46,6 +48,7 @@ function receipt(overrides: Partial<ReceiptPublic>): ReceiptPublic {
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     image_url: "/receipts/r1/image",
+    items: [],
     ...overrides,
   };
 }
@@ -439,6 +442,8 @@ describe("ReceiptsPage", () => {
       merchant: "REWE Markt",
       amount: "12.34",
       purchased_at: null,
+      items: [],
+      low_quality: false,
     });
 
     const user = userEvent.setup();

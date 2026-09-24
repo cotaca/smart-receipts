@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ImageUpload01Icon, ZoomInAreaIcon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  Alert02Icon,
+  Delete02Icon,
+  ImageUpload01Icon,
+  ZoomInAreaIcon,
+} from "@hugeicons/core-free-icons";
 
 import {
   ReceiptImage,
@@ -36,6 +42,14 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ApiError,
@@ -44,6 +58,7 @@ import {
   replaceReceiptImage,
   updateReceipt,
   type ReceiptExtraction,
+  type ReceiptItem,
   type ReceiptPublic,
 } from "@/lib/api";
 
@@ -52,9 +67,26 @@ const CURRENCIES = ["EUR", "USD", "GBP", "CHF"];
 // Accepts "," or "." as the decimal separator (European vs. US input), up to
 // 2 decimal places to match the backend's Numeric(10, 2) column.
 const AMOUNT_PATTERN = /^\d+([.,]\d{1,2})?$/;
+// Line item quantity: up to 3 decimal places (backend's Numeric(10, 3)) and
+// must be > 0 -- checked separately below since regex can't express that.
+const QUANTITY_PATTERN = /^\d+([.,]\d{1,3})?$/;
+// Line item price: like AMOUNT_PATTERN but signed (deposit returns/discounts
+// are negative).
+const PRICE_PATTERN = /^-?\d+([.,]\d{1,2})?$/;
 
 function normalizeAmount(raw: string): string {
   return raw.trim().replace(",", ".");
+}
+
+type ItemRow = ReceiptItem & { key: number };
+
+function isEmptyRow(row: ItemRow): boolean {
+  return (
+    !row.description.trim() &&
+    !row.quantity.trim() &&
+    !row.unit_price.trim() &&
+    !row.total_price.trim()
+  );
 }
 
 function RequiredMark() {
@@ -66,8 +98,10 @@ function RequiredMark() {
 }
 
 // "Suggested" / "Not detected" per field — this is all POST /receipts/extract
-// tells us. It returns no source or confidence, so anything more specific
-// (e.g. "top of receipt", a bounding-box overlay) would be fabricated copy.
+// tells us per field. Confidence exists server-side, but only feeds the line
+// filter and the overall low_quality flag, never a per-field score, so
+// anything more specific (e.g. "top of receipt", a bounding-box overlay)
+// would still be fabricated copy.
 function ExtractionBadge({ found }: { found: boolean }) {
   const t = useTranslations("ReceiptFormDialog");
   return (
@@ -96,7 +130,7 @@ export function ReceiptFormDialog({
 }: ReceiptFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
         {/* Keyed by receipt id (or "create") and only mounted while open, so
             switching targets or reopening always starts from fresh state —
             no effect needed to sync form fields from props. */}
@@ -141,6 +175,10 @@ function ReceiptForm({
   );
   const [purchasedAt, setPurchasedAt] = useState(receipt?.purchased_at ?? "");
   const [notes, setNotes] = useState(receipt?.notes ?? "");
+  const itemKeyCounter = useRef(receipt?.items.length ?? 0);
+  const [items, setItems] = useState<ItemRow[]>(
+    () => receipt?.items.map((item, index) => ({ ...item, key: index })) ?? [],
+  );
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -189,6 +227,14 @@ function ReceiptForm({
       if (data.merchant) setMerchant(data.merchant);
       if (data.amount) setAmount(data.amount);
       if (data.purchased_at) setPurchasedAt(data.purchased_at);
+      setItems((current) =>
+        data.items.length && current.length === 0
+          ? data.items.map((item) => ({
+              ...item,
+              key: itemKeyCounter.current++,
+            }))
+          : current,
+      );
       setExtraction(data);
     } catch {
       // Extraction is a convenience, not a requirement -- swallow errors so
@@ -215,6 +261,47 @@ function ReceiptForm({
     }
   }
 
+  function addItemRow() {
+    setItems((current) => [
+      ...current,
+      {
+        description: "",
+        quantity: "",
+        unit_price: "",
+        total_price: "",
+        key: itemKeyCounter.current++,
+      },
+    ]);
+  }
+
+  function removeItemRow(key: number) {
+    setItems((current) => current.filter((row) => row.key !== key));
+  }
+
+  function updateItemRow(key: number, patch: Partial<ReceiptItem>) {
+    setItems((current) =>
+      current.map((row) => {
+        if (row.key !== key) return row;
+        const next = { ...row, ...patch };
+        // Auto-recompute the total from quantity x unit price whenever
+        // either changes and both parse -- total itself stays editable too.
+        if ("quantity" in patch || "unit_price" in patch) {
+          const qty = Number(normalizeAmount(next.quantity));
+          const unit = Number(normalizeAmount(next.unit_price));
+          if (
+            next.quantity.trim() &&
+            next.unit_price.trim() &&
+            !Number.isNaN(qty) &&
+            !Number.isNaN(unit)
+          ) {
+            next.total_price = (qty * unit).toFixed(2);
+          }
+        }
+        return next;
+      }),
+    );
+  }
+
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
@@ -237,6 +324,27 @@ function ReceiptForm({
       return;
     }
 
+    // Fully empty rows are dropped; every other row must be complete and valid.
+    const nonEmptyItems = items.filter((row) => !isEmptyRow(row));
+    const invalidRow = nonEmptyItems.some(
+      (row) =>
+        !row.description.trim() ||
+        !QUANTITY_PATTERN.test(row.quantity.trim()) ||
+        Number(normalizeAmount(row.quantity)) <= 0 ||
+        !PRICE_PATTERN.test(row.unit_price.trim()) ||
+        !PRICE_PATTERN.test(row.total_price.trim()),
+    );
+    if (invalidRow) {
+      setError(t("invalidItemsError"));
+      return;
+    }
+    const normalizedItems: ReceiptItem[] = nonEmptyItems.map((row) => ({
+      description: row.description.trim(),
+      quantity: normalizeAmount(row.quantity),
+      unit_price: normalizeAmount(row.unit_price),
+      total_price: normalizeAmount(row.total_price),
+    }));
+
     setIsSubmitting(true);
     setError("");
 
@@ -248,6 +356,7 @@ function ReceiptForm({
             currency,
             purchased_at: purchasedAt,
             notes: notes || null,
+            items: normalizedItems,
           })
         : await createReceipt({
             file: file as File,
@@ -256,6 +365,7 @@ function ReceiptForm({
             currency,
             purchased_at: purchasedAt,
             notes: notes || undefined,
+            items: normalizedItems,
           });
 
       onSaved(saved);
@@ -407,10 +517,23 @@ function ReceiptForm({
               </Alert>
             )}
 
+            {isReview && extraction?.low_quality && (
+              <Alert>
+                <HugeiconsIcon icon={Alert02Icon} />
+                <AlertTitle>{t("lowQualityTitle")}</AlertTitle>
+                <AlertDescription>
+                  {t("lowQualityDescription")}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isReview && (
               <Alert>
                 <AlertDescription>
-                  {t("fieldsFound", { count: foundCount })}
+                  <p>{t("fieldsFound", { count: foundCount })}</p>
+                  <p>
+                    {t("itemsFound", { count: extraction?.items.length ?? 0 })}
+                  </p>
                 </AlertDescription>
               </Alert>
             )}
@@ -526,6 +649,116 @@ function ReceiptForm({
               </>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h3 id="line-items-heading" className="text-sm font-medium">
+              {t("lineItemsLabel")}
+            </h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addItemRow}
+            >
+              <HugeiconsIcon icon={Add01Icon} />
+              {t("addItem")}
+            </Button>
+          </div>
+          {items.length === 0 ? (
+            <p className="text-xs text-muted-foreground">{t("noItems")}</p>
+          ) : (
+            <Table aria-labelledby="line-items-heading">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("itemDescription")}</TableHead>
+                  <TableHead>{t("itemQuantity")}</TableHead>
+                  <TableHead>{t("itemUnitPrice")}</TableHead>
+                  <TableHead>{t("itemTotal")}</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((row, index) => {
+                  const rowNumber = index + 1;
+                  return (
+                    <TableRow key={row.key}>
+                      <TableCell>
+                        <Input
+                          aria-label={t("itemDescriptionAria", {
+                            row: rowNumber,
+                          })}
+                          maxLength={200}
+                          value={row.description}
+                          onChange={(e) =>
+                            updateItemRow(row.key, {
+                              description: e.target.value,
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label={t("itemQuantityAria", {
+                            row: rowNumber,
+                          })}
+                          type="text"
+                          inputMode="decimal"
+                          className="font-mono"
+                          value={row.quantity}
+                          onChange={(e) =>
+                            updateItemRow(row.key, { quantity: e.target.value })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label={t("itemUnitPriceAria", {
+                            row: rowNumber,
+                          })}
+                          type="text"
+                          inputMode="decimal"
+                          className="font-mono"
+                          value={row.unit_price}
+                          onChange={(e) =>
+                            updateItemRow(row.key, {
+                              unit_price: e.target.value,
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label={t("itemTotalAria", { row: rowNumber })}
+                          type="text"
+                          inputMode="decimal"
+                          className="font-mono"
+                          value={row.total_price}
+                          onChange={(e) =>
+                            updateItemRow(row.key, {
+                              total_price: e.target.value,
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={t("removeItemAria", { row: rowNumber })}
+                          onClick={() => removeItemRow(row.key)}
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         <DialogFooter>
