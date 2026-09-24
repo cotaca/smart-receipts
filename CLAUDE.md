@@ -1,41 +1,13 @@
-# Claude Code — SmartReceipts
+@AGENTS.md
 
-Read [AGENTS.md](AGENTS.md) for the rules that apply to everyone working here,
-and [ARCHITECTURE.md](ARCHITECTURE.md) for why the code looks the way it does.
-Everything below is Claude Code specific and doesn't apply to human contributors.
+# Claude Code
 
-## Default mode
+<!-- Maintainers: keep this file short. Design knowledge lives in .claude/rules/
+(path-scoped), enforcement in .claude/settings.json, the change loop in
+.claude/skills/implement/. HTML comments are stripped before Claude sees them. -->
 
-Use the `ponytail:ponytail` skill by default, not only when asked for it: keep
-replies short, keep token usage low, and take the simplest solution that
-actually holds — reuse a helper that already exists before writing one, reach
-for the platform or standard library before a new dependency, and don't build an
-abstraction with a single implementation.
-
-Not subject to that: input validation at trust boundaries, error handling that
-prevents data loss, security, and accessibility. Those get built properly.
-
-## The implementation loop
-
-Every non-trivial step runs the same way:
-
-1. Clarify open decisions with `AskUserQuestion` — each option with its trade-off.
-2. A **plan subagent** drafts the plan (plan only, no code).
-3. Review that plan yourself: verify its load-bearing claims against the actual
-   code, name the gaps, ask follow-ups if they change the work, then write the
-   final plan.
-4. Get it approved via plan mode before anything is implemented.
-5. An **implementation subagent** builds the approved plan.
-6. Review the result with the `engineering-advanced-skills:pr-review-expert`
-   skill against the working-tree diff — there's usually no real PR.
-7. A subagent fixes the findings; then reproduce each fix yourself. See the two
-   cautionary cases in AGENTS.md for why a subagent's report isn't proof.
-8. Repeat 6–7 until clean.
-
-**All subagents run with `model: "sonnet"`.**
-
-## Standing constraints
-
-- Never commit, stage or push — see AGENTS.md.
-- Every loop ends with commit messages, their file mapping, and an
-  ARCHITECTURE.md update.
+- Coding work: apply `ponytail:ponytail` — simplest thing that holds, reuse before writing, stdlib/platform before a dependency, no abstraction with one implementation. Never cut corners on validation at trust boundaries, error handling that prevents data loss, security or accessibility.
+- **Non-trivial** = touches more than 3 files, adds a dependency, changes an API, DB schema or `Settings` field, or has an open design decision. Non-trivial → `/implement`. Otherwise do it directly, then `scripts/check.sh` and the docs step from AGENTS.md.
+- Plan in the main thread. Subagents: `implementer` builds and fixes (Sonnet, gated on `scripts/check.sh`), `reviewer` reviews read-only, `ui-verifier` checks real browser behavior.
+- Design reasoning for the files you touch arrives via `.claude/rules/`. Before undoing a decision a rule states, say so and ask.
+- git is read-only for you (enforced): `diff`/`status`/`log` yes, `add`/`commit`/`push` no.
