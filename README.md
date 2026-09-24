@@ -27,7 +27,7 @@ Not built yet: PDF e-receipts, line-item extraction, the analytics dashboard, de
 - **OCR:** Tesseract (`deu`), possibly LLM-based extraction later
 - **UI reference:** the screen designs in [`docs/ui-concept/`](docs/ui-concept/) — check there before building a screen by hand
 
-Changing the code? [ARCHITECTURE.md](ARCHITECTURE.md) explains why it's built this way; [AGENTS.md](AGENTS.md) covers how to work in it.
+Changing the code? [ARCHITECTURE.md](ARCHITECTURE.md) maps where the reasoning behind each area lives; [AGENTS.md](AGENTS.md) covers how to work in it.
 
 ## Getting Started
 
@@ -82,6 +82,8 @@ npm run test
 npm run lint:fix && npm run format
 npm run typecheck
 ```
+
+Before handing work over, `scripts/check.sh` runs all of the above (non-watch) in one go.
 
 `DATABASE_URL` in `.env` points at `localhost`, so native `pytest` and `alembic` work as usual; Compose overrides only the host for the container. You can still run the backend natively with `uv run uvicorn backend.main:app --reload` instead of the container — OCR then needs Tesseract (with the `deu` language pack) installed and on your `PATH`.
 
