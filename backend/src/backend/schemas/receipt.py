@@ -2,7 +2,17 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ReceiptLineItem(BaseModel):
+    """One line item, in and out. No id: PATCH always replaces the list."""
+
+    description: str = Field(min_length=1, max_length=200)
+    quantity: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
+    # May be negative (deposit return, discount line).
+    unit_price: Decimal = Field(max_digits=10, decimal_places=2)
+    total_price: Decimal = Field(max_digits=10, decimal_places=2)
 
 
 class ReceiptPublic(BaseModel):
@@ -18,6 +28,7 @@ class ReceiptPublic(BaseModel):
     created_at: datetime
     updated_at: datetime
     image_url: str
+    items: list[ReceiptLineItem]
 
 
 class ReceiptUpdate(BaseModel):
@@ -26,6 +37,7 @@ class ReceiptUpdate(BaseModel):
     currency: str | None = None
     purchased_at: date | None = None
     notes: str | None = None
+    items: list[ReceiptLineItem] | None = None
 
 
 class ReceiptExtraction(BaseModel):
@@ -34,3 +46,5 @@ class ReceiptExtraction(BaseModel):
     merchant: str | None
     amount: Decimal | None
     purchased_at: date | None
+    items: list[ReceiptLineItem] = []
+    low_quality: bool = False

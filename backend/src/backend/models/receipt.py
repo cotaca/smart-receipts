@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import Column, Numeric
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class Receipt(SQLModel, table=True):
@@ -28,3 +28,26 @@ class Receipt(SQLModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column_kwargs={"onupdate": lambda: datetime.now(UTC)},
     )
+
+    items: list[ReceiptItem] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "order_by": "ReceiptItem.position",
+            "lazy": "selectin",
+        }
+    )
+
+
+class ReceiptItem(SQLModel, table=True):
+    __tablename__ = "receipt_items"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    receipt_id: uuid.UUID = Field(
+        foreign_key="receipts.id", index=True, ondelete="CASCADE"
+    )
+    position: int
+
+    description: str
+    quantity: Decimal = Field(sa_column=Column(Numeric(10, 3), nullable=False))
+    unit_price: Decimal = Field(sa_column=Column(Numeric(10, 2), nullable=False))
+    total_price: Decimal = Field(sa_column=Column(Numeric(10, 2), nullable=False))

@@ -42,8 +42,9 @@ Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart* (Spe
 per month, Recharts), Progress* (Top-Merchant-Balken), Table (Most-bought
 products), Separator, Badge*, Select (Zeitraum „Last 12 months"). Mobile: Bottom-Nav
 als eigenes Layout + Sheet* für das Menü.
-Hinweis im Mockup: „Most-bought products — needs line items", also abhängig von der
-geplanten `ReceiptItem`-Tabelle.
+Hinweis im Mockup: „Most-bought products — needs line items" — die `ReceiptItem`-Tabelle
+ist inzwischen gebaut (siehe `.claude/rules/backend/receipts-api.md`), diese Auswertung
+selbst (Dashboard-Backend) fehlt weiterhin.
 
 ### `Screen-ReceiptsToday` — Liste im heutigen Umfang
 Card, InputGroup (Suche), Select (Zeitraum, Sortierung), Button („Upload receipt"),

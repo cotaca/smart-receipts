@@ -12,18 +12,27 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.exceptions import RequestValidationError
 from PIL.Image import DecompressionBombError
+from pydantic import TypeAdapter, ValidationError
 from sqlmodel import Session, select
 from starlette.concurrency import run_in_threadpool
 
 from backend.core.db import get_session
 from backend.core.security import get_current_user
-from backend.models.receipt import Receipt
+from backend.models.receipt import Receipt, ReceiptItem
 from backend.models.user import User
-from backend.schemas.receipt import ReceiptExtraction, ReceiptPublic, ReceiptUpdate
+from backend.schemas.receipt import (
+    ReceiptExtraction,
+    ReceiptLineItem,
+    ReceiptPublic,
+    ReceiptUpdate,
+)
 from backend.services.image_processing import ImageTooLargeError, preprocess_image
 from backend.services.ocr import extract_receipt_data
 from backend.services.storage import StorageBackend, get_storage_backend
+
+_ITEMS_ADAPTER = TypeAdapter(list[ReceiptLineItem])
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
 
@@ -49,7 +58,17 @@ def _to_public(receipt: Receipt) -> ReceiptPublic:
         created_at=receipt.created_at,
         updated_at=receipt.updated_at,
         image_url=_image_url(receipt.id),
+        items=[
+            ReceiptLineItem.model_validate(item, from_attributes=True)
+            for item in receipt.items
+        ],
     )
+
+
+def _to_rows(items: list[ReceiptLineItem]) -> list[ReceiptItem]:
+    return [
+        ReceiptItem(position=i, **item.model_dump()) for i, item in enumerate(items)
+    ]
 
 
 def _get_owned_receipt(
@@ -79,10 +98,24 @@ async def create_receipt(
     purchased_at: date = Form(...),
     currency: str = Form("EUR"),
     notes: str | None = Form(None),
+    items: str = Form("[]"),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
     storage: StorageBackend = Depends(get_storage_backend),
 ) -> ReceiptPublic:
+    # Validate before touching storage, so an invalid items payload never
+    # leaves an orphaned file behind.
+    try:
+        parsed_items = _ITEMS_ADAPTER.validate_json(items)
+    except ValidationError as exc:
+        # Prefix loc with ("body", "items") to match FastAPI's own shape for
+        # every other field -- exc.errors() otherwise starts at the item
+        # index (e.g. (0, "description")).
+        errors = [
+            {**error, "loc": ("body", "items", *error["loc"])} for error in exc.errors()
+        ]
+        raise RequestValidationError(errors) from exc
+
     content = await _read_upload(file)
 
     # Pillow is CPU-bound and this is an async route -- decoding a 12 MP photo
@@ -111,6 +144,7 @@ async def create_receipt(
         currency=currency,
         purchased_at=purchased_at,
         notes=notes,
+        items=_to_rows(parsed_items),
     )
     session.add(receipt)
     session.commit()
@@ -174,8 +208,10 @@ def update_receipt(
     current_user: User = Depends(get_current_user),
 ) -> ReceiptPublic:
     receipt = _get_owned_receipt(receipt_id, session, current_user)
-    for field, value in body.model_dump(exclude_unset=True).items():
+    for field, value in body.model_dump(exclude_unset=True, exclude={"items"}).items():
         setattr(receipt, field, value)
+    if body.items is not None:
+        receipt.items = _to_rows(body.items)
     session.add(receipt)
     session.commit()
     session.refresh(receipt)
