@@ -10,7 +10,7 @@ logic worth a dedicated case.
 
 from unittest.mock import patch
 
-from tests.images import make_image_bytes
+from tests.images import fake_ocr_data, make_image_bytes
 from tests.test_receipts import _register_and_auth
 
 RECEIPT_BYTES = make_image_bytes()
@@ -20,8 +20,8 @@ async def test_extract_returns_parsed_fields(client):
     headers = await _register_and_auth(client, "owner@test.com")
 
     with patch(
-        "backend.services.ocr.pytesseract.image_to_string",
-        return_value="REWE Markt\nSUMME 12,34\n15.01.2024",
+        "backend.services.ocr.pytesseract.image_to_data",
+        return_value=fake_ocr_data("REWE Markt\nSUMME 12,34\n15.01.2024"),
     ):
         response = await client.post(
             "/receipts/extract",
@@ -34,13 +34,54 @@ async def test_extract_returns_parsed_fields(client):
     assert body["merchant"] == "REWE Markt"
     assert body["amount"] == "12.34"
     assert body["purchased_at"] == "2024-01-15"
+    assert body["items"] == []
+    assert body["low_quality"] is False
+
+
+async def test_extract_returns_items(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+
+    with patch(
+        "backend.services.ocr.pytesseract.image_to_data",
+        return_value=fake_ocr_data("REWE Markt\nMilch 1,29\nSUMME 1,29"),
+    ):
+        response = await client.post(
+            "/receipts/extract",
+            headers=headers,
+            files={"file": ("receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+        )
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == 1
+    assert items[0]["description"] == "Milch"
+
+
+async def test_extract_flags_low_quality_images(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+
+    with patch(
+        "backend.services.ocr.pytesseract.image_to_data",
+        return_value=fake_ocr_data("blurry text", conf=30.0),
+    ):
+        response = await client.post(
+            "/receipts/extract",
+            headers=headers,
+            files={"file": ("receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["low_quality"] is True
 
 
 async def test_extract_persists_nothing(client, storage_backend):
     headers = await _register_and_auth(client, "owner@test.com")
 
     with (
-        patch("backend.services.ocr.pytesseract.image_to_string", return_value=""),
+        patch(
+            "backend.services.ocr.pytesseract.image_to_data",
+            return_value=fake_ocr_data(""),
+        ),
         patch.object(storage_backend, "save") as save_mock,
     ):
         response = await client.post(

@@ -9,9 +9,9 @@ that motivated them.
 | Area | What the rule covers |
 |---|---|
 | [Auth (backend)](.claude/rules/backend/auth.md) | custom JWT, stateless refresh, bcrypt 72-byte guard, 400 not 401, account settings as columns |
-| [Receipts API & storage](.claude/rules/backend/receipts-api.md) | money/date types, 404 not 403, storage `Protocol`, replace-image ordering; PDF upload and line items (design only) |
+| [Receipts API & storage](.claude/rules/backend/receipts-api.md) | money/date types, 404 not 403, storage `Protocol`, replace-image ordering, line items; PDF upload (design only) |
 | [Image preprocessing](.claude/rules/backend/image-processing.md) | pipeline order, always JPEG, EXIF stripped, pixel guard |
-| [OCR](.claude/rules/backend/ocr.md) | PSM 6, keyword and regex traps; why other receipt languages aren't built yet |
+| [OCR](.claude/rules/backend/ocr.md) | PSM 6, keyword and regex traps, confidence filter, benchmark; why other receipt languages aren't built yet |
 | [Backend tests](.claude/rules/backend/testing.md) | fixtures, test DB |
 | [App shell & API client](.claude/rules/frontend/shell-auth.md) | single auth guard, route group, `MeContext`, `apiFetch` |
 | [UI conventions](.claude/rules/frontend/ui.md) | design reference, Base UI specifics, `Select` traps, jsdom limits |
