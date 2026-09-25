@@ -11,6 +11,9 @@ const alertVariants = cva(
         default: "bg-card text-card-foreground",
         destructive:
           "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+        // Project addition (not in the registry) -- re-add after regenerating.
+        warning:
+          "border-warning/50 bg-warning/10 text-warning-foreground *:data-[slot=alert-description]:text-warning-foreground/90",
       },
     },
     defaultVariants: {

@@ -27,6 +27,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -73,6 +75,9 @@
   --accent: #6d309c;
   --accent-foreground: #f8f5fa;
   --destructive: oklch(0.577 0.245 27.325);
+  /* Amber: hints the user should act on but that aren't errors. */
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-foreground: oklch(0.473 0.137 46.201);
   --border: color-mix(in oklch, var(--foreground) 12%, var(--background));
   --input: color-mix(in oklch, var(--foreground) 12%, var(--background));
   --ring: color-mix(in oklch, var(--accent) 55%, transparent);
@@ -113,6 +118,8 @@
   --accent: #a063cf;
   --accent-foreground: #150e1b;
   --destructive: oklch(0.704 0.191 22.216);
+  --warning: oklch(0.828 0.189 84.429);
+  --warning-foreground: oklch(0.879 0.169 91.605);
   --border: color-mix(in oklch, var(--foreground) 12%, transparent);
   --input: color-mix(in oklch, var(--foreground) 15%, transparent);
   --ring: color-mix(in oklch, var(--accent) 60%, transparent);
