@@ -26,23 +26,68 @@ function authHeaders(): Record<string, string> {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
 
+// The access token expires after 15 minutes, but the page may stay open much
+// longer. On a 401 we refresh once via the httpOnly cookie and retry the
+// request once. Concurrent 401s share one in-flight refresh. /auth/* is
+// exempt: a 401 there means bad credentials or a dead refresh cookie, and
+// retrying would loop.
+let refreshing: Promise<boolean> | null = null;
+
+function refreshAccessToken(): Promise<boolean> {
+  refreshing ??= fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  })
+    .then(async (response) => {
+      if (!response.ok) return false;
+      const { access_token } = (await response.json()) as AuthResponse;
+      accessToken = access_token;
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+async function authedFetch(
+  path: string,
+  init: RequestInit = {},
+  headers: Record<string, string> = {},
+): Promise<Response> {
+  // Headers are rebuilt per attempt so the retry carries the new token.
+  const send = () =>
+    fetch(`${API_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: { ...headers, ...authHeaders(), ...init.headers },
+    });
+
+  const response = await send();
+  if (
+    response.status === 401 &&
+    !path.startsWith("/auth/") &&
+    (await refreshAccessToken())
+  ) {
+    return send();
+  }
+  return response;
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
   const isFormData = init?.body instanceof FormData;
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      // FormData bodies need the browser to set their own Content-Type
-      // (including the multipart boundary) — forcing JSON here breaks upload parsing.
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...authHeaders(),
-      ...init?.headers,
-    },
-  });
+  const response = await authedFetch(
+    path,
+    init,
+    // FormData bodies need the browser to set their own Content-Type
+    // (including the multipart boundary) — forcing JSON here breaks upload parsing.
+    isFormData ? {} : { "Content-Type": "application/json" },
+  );
 
   if (!response.ok) {
     throw new ApiError(
@@ -62,10 +107,7 @@ export async function apiFetch<T>(
 // directly as an <img src> — fetch the blob and hand back an object URL instead.
 // Callers must URL.revokeObjectURL() it when done (e.g. on unmount).
 export async function apiFetchBlob(path: string): Promise<Blob> {
-  const response = await fetch(`${API_URL}${path}`, {
-    credentials: "include",
-    headers: authHeaders(),
-  });
+  const response = await authedFetch(path);
 
   if (!response.ok) {
     throw new ApiError(
