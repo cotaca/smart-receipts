@@ -160,6 +160,8 @@
     "itemUnitPriceAria": "Item {row} unit price",
     "itemTotalAria": "Item {row} total",
     "removeItemAria": "Remove item {row}",
+    "itemsSum": "Items total",
+    "itemsSumMismatch": "Differs from the amount by {difference}.",
     "invalidItemsError": "Please check the line items -- each needs a description, a quantity greater than 0 and valid prices."
   },
   "ReceiptsTable": {

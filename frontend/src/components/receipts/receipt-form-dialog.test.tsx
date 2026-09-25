@@ -398,6 +398,107 @@ describe("ReceiptFormDialog line items", () => {
     expect(api.updateReceipt).not.toHaveBeenCalled();
   });
 
+  it("shows exactly one Add item button and toggles the empty state", async () => {
+    renderDialog(RECEIPT);
+
+    expect(screen.getAllByRole("button", { name: "Add item" })).toHaveLength(1);
+    expect(screen.getByText("No line items.")).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+
+    expect(screen.getByLabelText("Item 1 description")).toBeInTheDocument();
+    expect(screen.queryByText("No line items.")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Add item" })).toHaveLength(1);
+  });
+
+  it("shows the item sum and a mismatch hint against the amount", async () => {
+    const receipt = {
+      ...RECEIPT,
+      amount: "3.58",
+      items: [
+        {
+          description: "Milch",
+          quantity: "2",
+          unit_price: "1.29",
+          total_price: "2.58",
+        },
+        {
+          description: "Brot",
+          quantity: "1",
+          unit_price: "1.00",
+          total_price: "1.00",
+        },
+      ],
+    };
+    renderDialog(receipt);
+    const user = userEvent.setup();
+
+    expect(await screen.findByText("3.58 EUR")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Differs from the amount/),
+    ).not.toBeInTheDocument();
+
+    const amountInput = screen.getByLabelText(/^Amount/);
+    await user.clear(amountInput);
+    await user.type(amountInput, "5.00");
+
+    const hint = await screen.findByText(
+      "Differs from the amount by 1.42 EUR.",
+    );
+    // Polite, not assertive: it re-renders on every keystroke in Amount.
+    expect(hint.closest('[data-slot="alert"]')).toHaveAttribute(
+      "role",
+      "status",
+    );
+  });
+
+  it("excludes an invalid total row from the item sum", async () => {
+    const receipt = {
+      ...RECEIPT,
+      items: [
+        {
+          description: "Milch",
+          quantity: "2",
+          unit_price: "1.29",
+          total_price: "2.58",
+        },
+      ],
+    };
+    renderDialog(receipt);
+    const user = userEvent.setup();
+
+    expect(await screen.findByText("2.58 EUR")).toBeInTheDocument();
+
+    // A second row with only an unparseable total: not empty (so not
+    // dropped), but invalid, so the sum must stay at the first row's total.
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await user.type(screen.getByLabelText("Item 2 total"), "abc");
+
+    expect(screen.getByText("2.58 EUR")).toBeInTheDocument();
+  });
+
+  it("shows the low-quality warning and the field counts as separate alerts", async () => {
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: null,
+      amount: null,
+      purchased_at: null,
+      items: [],
+      low_quality: true,
+    });
+    renderDialog(undefined);
+    const user = userEvent.setup();
+
+    const file = new File(["data"], "receipt.jpg", { type: "image/jpeg" });
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+
+    const hint = await screen.findByText("This image is hard to read");
+    const fields = await screen.findByText("0 of 3 fields found.");
+    expect(hint.closest('[data-slot="alert"]')).not.toBe(
+      fields.closest('[data-slot="alert"]'),
+    );
+  });
+
   it("sends normalized items on save", async () => {
     vi.spyOn(api, "updateReceipt").mockResolvedValue(RECEIPT);
     renderDialog(RECEIPT);

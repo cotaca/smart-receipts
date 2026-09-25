@@ -30,6 +30,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -46,6 +52,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -130,7 +137,7 @@ export function ReceiptFormDialog({
 }: ReceiptFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-5xl">
         {/* Keyed by receipt id (or "create") and only mounted while open, so
             switching targets or reopening always starts from fresh state —
             no effect needed to sync form fields from props. */}
@@ -213,6 +220,26 @@ function ReceiptForm({
         Boolean,
       ).length
     : 0;
+
+  // Integer cents -- summing parsed floats drifts (0.1 + 0.2 !== 0.3).
+  // Invalid/empty rows are skipped rather than blocking the sum: this
+  // footer is a display-only hint, never a submit gate.
+  const sumCents = items.reduce((sum, row) => {
+    const total = row.total_price.trim();
+    if (isEmptyRow(row) || !PRICE_PATTERN.test(total)) return sum;
+    return sum + Math.round(Number(normalizeAmount(total)) * 100);
+  }, 0);
+  const trimmedAmount = amount.trim();
+  const amountCents = AMOUNT_PATTERN.test(trimmedAmount)
+    ? Math.round(Number(normalizeAmount(trimmedAmount)) * 100)
+    : null;
+  const itemsSumMismatch =
+    amountCents !== null && amountCents !== sumCents
+      ? formatAmount(
+          String(Math.abs(amountCents - sumCents) / 100),
+          numberFormat,
+        )
+      : null;
 
   async function handleFileChange(selected: File | null) {
     setFile(selected);
@@ -386,43 +413,17 @@ function ReceiptForm({
         </DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {error && <p className="text-xs text-destructive">{error}</p>}
-
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">*</span> {t("required")}
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-[280px_1fr]">
-          {/* Preview column */}
-          <div className="flex flex-col gap-2">
-            {isEdit && receipt ? (
-              <div className="h-96 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin]">
-                <ReceiptImage
-                  receiptId={receipt.id}
-                  alt={receipt.merchant}
-                  className="h-auto w-full"
-                />
-              </div>
-            ) : previewUrl ? (
-              // Local blob preview — the file never left the browser yet, so
-              // this can't go through ReceiptImage (which fetches from the API).
-              <div className="h-96 w-full overflow-y-auto rounded-lg border border-border bg-muted [scrollbar-width:thin]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewUrl}
-                  alt={t("receiptPreviewAlt")}
-                  className="h-auto w-full"
-                />
-              </div>
-            ) : (
-              <div className="flex h-96 w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground">
-                {t("noFileSelected")}
-              </div>
-            )}
-
-            {!isEdit && (
-              <div className="flex flex-col gap-1.5">
+      <form
+        onSubmit={handleSubmit}
+        className="flex min-h-0 flex-1 flex-col gap-4"
+      >
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto md:grid-cols-[320px_minmax(0,1fr)]">
+          {/* Preview column. At md+ it's taken out of flow (absolute) so the
+              fields column alone sets the row height, and the image can grow
+              at most that tall -- then it scrolls. */}
+          <div className="md:relative">
+            <div className="flex flex-col gap-2 md:absolute md:inset-0">
+              {!isEdit && (
                 <input
                   ref={fileInputRef}
                   id="file"
@@ -433,9 +434,52 @@ function ReceiptForm({
                     handleFileChange(e.target.files?.[0] ?? null)
                   }
                 />
-                <Label htmlFor="file">
+              )}
+
+              {/* Same fixed-height label row as the fields column, so the
+                preview's top edge lines up with the Merchant input. Edit mode
+                has no input to point at -- replacing is its own button. */}
+              <div className="flex h-5 items-center">
+                <Label htmlFor={isEdit ? undefined : "file"}>
                   {t("receiptImageLabel")} <RequiredMark />
                 </Label>
+              </div>
+
+              {isEdit && receipt ? (
+                <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin] md:max-h-none">
+                  <ReceiptImage
+                    receiptId={receipt.id}
+                    alt={receipt.merchant}
+                    className="h-auto w-full"
+                  />
+                </div>
+              ) : previewUrl ? (
+                // Local blob preview — the file never left the browser yet, so
+                // this can't go through ReceiptImage (which fetches from the API).
+                <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg border border-border bg-muted [scrollbar-width:thin] md:max-h-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt={t("receiptPreviewAlt")}
+                    className="h-auto w-full"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-64 w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-muted text-center text-xs text-muted-foreground md:h-auto md:min-h-0 md:flex-1">
+                  {t("noFileSelected")}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <HugeiconsIcon icon={ImageUpload01Icon} />
+                    {t("chooseFile")}
+                  </Button>
+                </div>
+              )}
+
+              {!isEdit && previewUrl && (
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -443,54 +487,8 @@ function ReceiptForm({
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    {file ? t("replaceFile") : t("chooseFile")}
-                    {isExtracting && <Spinner />}
-                  </Button>
-                  {previewUrl && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setZoomOpen(true)}
-                    >
-                      <HugeiconsIcon icon={ZoomInAreaIcon} />
-                      {t("zoom")}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isEdit && receipt && (
-              <div className="flex flex-col gap-1.5">
-                <input
-                  ref={replaceFileInputRef}
-                  id="replace-file"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic"
-                  className="sr-only"
-                  onChange={(e) => {
-                    void handleReplaceImage(e.target.files?.[0] ?? null);
-                    e.target.value = "";
-                  }}
-                />
-                <Label htmlFor="replace-file" className="sr-only">
-                  {t("replaceFile")}
-                </Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isReplacingImage}
-                    onClick={() => replaceFileInputRef.current?.click()}
-                  >
-                    {isReplacingImage ? (
-                      <Spinner />
-                    ) : (
-                      <HugeiconsIcon icon={ImageUpload01Icon} />
-                    )}
                     {t("replaceFile")}
+                    {isExtracting && <Spinner />}
                   </Button>
                   <Button
                     type="button"
@@ -502,8 +500,52 @@ function ReceiptForm({
                     {t("zoom")}
                   </Button>
                 </div>
-              </div>
-            )}
+              )}
+
+              {isEdit && receipt && (
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    ref={replaceFileInputRef}
+                    id="replace-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic"
+                    className="sr-only"
+                    onChange={(e) => {
+                      void handleReplaceImage(e.target.files?.[0] ?? null);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Label htmlFor="replace-file" className="sr-only">
+                    {t("replaceFile")}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isReplacingImage}
+                      onClick={() => replaceFileInputRef.current?.click()}
+                    >
+                      {isReplacingImage ? (
+                        <Spinner />
+                      ) : (
+                        <HugeiconsIcon icon={ImageUpload01Icon} />
+                      )}
+                      {t("replaceFile")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomOpen(true)}
+                    >
+                      <HugeiconsIcon icon={ZoomInAreaIcon} />
+                      {t("zoom")}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Fields column */}
@@ -518,7 +560,7 @@ function ReceiptForm({
             )}
 
             {isReview && extraction?.low_quality && (
-              <Alert>
+              <Alert variant="warning">
                 <HugeiconsIcon icon={Alert02Icon} />
                 <AlertTitle>{t("lowQualityTitle")}</AlertTitle>
                 <AlertDescription>
@@ -564,8 +606,8 @@ function ReceiptForm({
                   />
                 </div>
 
-                <div className="flex gap-3">
-                  <div className="flex flex-1 flex-col gap-1.5">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)]">
+                  <div className="flex flex-col gap-1.5">
                     <div className="flex h-5 items-center gap-2">
                       <Label htmlFor="amount">
                         {t("amountLabel")} <RequiredMark />
@@ -589,7 +631,7 @@ function ReceiptForm({
                       className="font-mono"
                     />
                   </div>
-                  <div className="flex w-28 flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5">
                     {/* Same fixed-height row as the other labels, so the
                         select stays level with the amount input even when
                         that one carries an extraction badge. */}
@@ -614,154 +656,228 @@ function ReceiptForm({
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex h-5 items-center gap-2">
-                    <Label htmlFor="purchased_at">
-                      {t("purchaseDateLabel")} <RequiredMark />
-                    </Label>
-                    {isReview && (
-                      <ExtractionBadge
-                        found={Boolean(extraction?.purchased_at)}
-                      />
-                    )}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex h-5 items-center gap-2">
+                      <Label htmlFor="purchased_at">
+                        {t("purchaseDateLabel")} <RequiredMark />
+                      </Label>
+                      {isReview && (
+                        <ExtractionBadge
+                          found={Boolean(extraction?.purchased_at)}
+                        />
+                      )}
+                    </div>
+                    <DatePicker
+                      id="purchased_at"
+                      value={purchasedAt}
+                      onChange={setPurchasedAt}
+                      numberFormat={numberFormat}
+                      placeholder={t("pickDate")}
+                      className="w-full font-mono"
+                    />
                   </div>
-                  <DatePicker
-                    id="purchased_at"
-                    value={purchasedAt}
-                    onChange={setPurchasedAt}
-                    numberFormat={numberFormat}
-                    placeholder={t("pickDate")}
-                    className="w-full font-mono"
-                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="notes">{t("notesLabel")}</Label>
                   <Textarea
                     id="notes"
+                    rows={2}
+                    className="min-h-16"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={t("notesPlaceholder")}
                   />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <h3 id="line-items-heading" className="text-sm font-medium">
+                      {t("lineItemsLabel")}
+                    </h3>
+                    {items.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addItemRow}
+                      >
+                        <HugeiconsIcon icon={Add01Icon} />
+                        {t("addItem")}
+                      </Button>
+                    )}
+                  </div>
+                  {items.length === 0 ? (
+                    <Empty className="rounded-xl border border-dashed p-4">
+                      <EmptyHeader>
+                        <EmptyDescription>{t("noItems")}</EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addItemRow}
+                        >
+                          <HugeiconsIcon icon={Add01Icon} />
+                          {t("addItem")}
+                        </Button>
+                      </EmptyContent>
+                    </Empty>
+                  ) : (
+                    <>
+                      {/* ~6 item rows before scrolling: header 41px + 6 x 45px
+                          (p-2 cell + h-7 input + border) + footer ~33px = 344px.
+                          Header and sum row stay sticky. Targets the Table's
+                          own container, which is the scroll ancestor. */}
+                      <div className="[&>[data-slot=table-container]]:max-h-86 [&>[data-slot=table-container]]:overflow-y-auto [&>[data-slot=table-container]]:[scrollbar-width:thin]">
+                        <Table aria-labelledby="line-items-heading">
+                          <TableHeader className="sticky top-0 z-10 bg-popover">
+                            <TableRow>
+                              <TableHead>{t("itemDescription")}</TableHead>
+                              <TableHead className="w-20 text-right">
+                                {t("itemQuantity")}
+                              </TableHead>
+                              <TableHead className="w-28 text-right">
+                                {t("itemUnitPrice")}
+                              </TableHead>
+                              <TableHead className="w-28 text-right">
+                                {t("itemTotal")}
+                              </TableHead>
+                              <TableHead className="w-9" />
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((row, index) => {
+                              const rowNumber = index + 1;
+                              return (
+                                <TableRow key={row.key}>
+                                  <TableCell>
+                                    <Input
+                                      aria-label={t("itemDescriptionAria", {
+                                        row: rowNumber,
+                                      })}
+                                      maxLength={200}
+                                      value={row.description}
+                                      onChange={(e) =>
+                                        updateItemRow(row.key, {
+                                          description: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      aria-label={t("itemQuantityAria", {
+                                        row: rowNumber,
+                                      })}
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="font-mono text-right"
+                                      value={row.quantity}
+                                      onChange={(e) =>
+                                        updateItemRow(row.key, {
+                                          quantity: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      aria-label={t("itemUnitPriceAria", {
+                                        row: rowNumber,
+                                      })}
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="font-mono text-right"
+                                      value={row.unit_price}
+                                      onChange={(e) =>
+                                        updateItemRow(row.key, {
+                                          unit_price: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      aria-label={t("itemTotalAria", {
+                                        row: rowNumber,
+                                      })}
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="font-mono text-right"
+                                      value={row.total_price}
+                                      onChange={(e) =>
+                                        updateItemRow(row.key, {
+                                          total_price: e.target.value,
+                                        })
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={t("removeItemAria", {
+                                        row: rowNumber,
+                                      })}
+                                      onClick={() => removeItemRow(row.key)}
+                                    >
+                                      <HugeiconsIcon icon={Delete02Icon} />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                          <TableFooter className="sticky bottom-0 z-10 bg-popover">
+                            <TableRow className="bg-muted/50">
+                              <TableCell colSpan={3}>{t("itemsSum")}</TableCell>
+                              <TableCell className="text-right font-mono">
+                                {formatAmount(
+                                  String(sumCents / 100),
+                                  numberFormat,
+                                )}{" "}
+                                {currency}
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </TableFooter>
+                        </Table>
+                      </div>
+                      {itemsSumMismatch && (
+                        // role="status", not the Alert's default "alert": the
+                        // text changes on every keystroke in Amount, and an
+                        // assertive live region would interrupt each time.
+                        <Alert variant="warning" role="status">
+                          <HugeiconsIcon icon={Alert02Icon} />
+                          <AlertDescription>
+                            {t("itemsSumMismatch", {
+                              difference: `${itemsSumMismatch} ${currency}`,
+                            })}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </>
+                  )}
                 </div>
               </>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <h3 id="line-items-heading" className="text-sm font-medium">
-              {t("lineItemsLabel")}
-            </h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addItemRow}
-            >
-              <HugeiconsIcon icon={Add01Icon} />
-              {t("addItem")}
-            </Button>
+        <DialogFooter className="items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs text-muted-foreground">
+              <span className="text-destructive">*</span> {t("required")}
+            </p>
+            {error && (
+              <p className="text-xs text-destructive" role="alert">
+                {error}
+              </p>
+            )}
           </div>
-          {items.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("noItems")}</p>
-          ) : (
-            <Table aria-labelledby="line-items-heading">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("itemDescription")}</TableHead>
-                  <TableHead>{t("itemQuantity")}</TableHead>
-                  <TableHead>{t("itemUnitPrice")}</TableHead>
-                  <TableHead>{t("itemTotal")}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((row, index) => {
-                  const rowNumber = index + 1;
-                  return (
-                    <TableRow key={row.key}>
-                      <TableCell>
-                        <Input
-                          aria-label={t("itemDescriptionAria", {
-                            row: rowNumber,
-                          })}
-                          maxLength={200}
-                          value={row.description}
-                          onChange={(e) =>
-                            updateItemRow(row.key, {
-                              description: e.target.value,
-                            })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          aria-label={t("itemQuantityAria", {
-                            row: rowNumber,
-                          })}
-                          type="text"
-                          inputMode="decimal"
-                          className="font-mono"
-                          value={row.quantity}
-                          onChange={(e) =>
-                            updateItemRow(row.key, { quantity: e.target.value })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          aria-label={t("itemUnitPriceAria", {
-                            row: rowNumber,
-                          })}
-                          type="text"
-                          inputMode="decimal"
-                          className="font-mono"
-                          value={row.unit_price}
-                          onChange={(e) =>
-                            updateItemRow(row.key, {
-                              unit_price: e.target.value,
-                            })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          aria-label={t("itemTotalAria", { row: rowNumber })}
-                          type="text"
-                          inputMode="decimal"
-                          className="font-mono"
-                          value={row.total_price}
-                          onChange={(e) =>
-                            updateItemRow(row.key, {
-                              total_price: e.target.value,
-                            })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          aria-label={t("removeItemAria", { row: rowNumber })}
-                          onClick={() => removeItemRow(row.key)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-
-        <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Spinner />}
             {isEdit ? t("saveChanges") : t("upload")}
@@ -774,9 +890,9 @@ function ReceiptForm({
           gives it its own focus trap and Escape handling, closing only this
           top overlay and leaving the edit/create dialog open underneath. */}
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        {/* Wider than the dialog underneath (sm:max-w-3xl) -- an overlay the
+        {/* Wider than the dialog underneath (sm:max-w-5xl) -- an overlay the
             same size as its parent would not read as a zoom at all. */}
-        <DialogContent className="sm:max-w-5xl">
+        <DialogContent className="sm:max-w-7xl">
           <DialogTitle className="sr-only">
             {t("zoomTitle", { merchant: receipt?.merchant ?? merchant })}
           </DialogTitle>

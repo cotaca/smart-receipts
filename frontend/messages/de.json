@@ -160,6 +160,8 @@
     "itemUnitPriceAria": "Position {row} Einzelpreis",
     "itemTotalAria": "Position {row} Summe",
     "removeItemAria": "Position {row} entfernen",
+    "itemsSum": "Summe Positionen",
+    "itemsSumMismatch": "Weicht um {difference} vom Betrag ab.",
     "invalidItemsError": "Bitte die Positionen prüfen -- jede braucht eine Beschreibung, eine Menge größer 0 und gültige Preise."
   },
   "ReceiptsTable": {
