@@ -140,8 +140,6 @@
     "upload": "Upload",
     "receiptPreviewAlt": "Receipt preview",
     "zoom": "Zoom",
-    "zoomTitle": "{merchant} receipt, enlarged",
-    "zoomDescription": "Press Escape or click outside to close. Scroll or use the buttons to zoom, drag the image to pan.",
     "zoomInButton": "Zoom in",
     "zoomOutButton": "Zoom out",
     "resetZoomButton": "Reset",
@@ -167,10 +165,29 @@
   "ReceiptsTable": {
     "merchant": "Merchant",
     "date": "Date",
-    "amount": "Amount",
-    "actionsAriaLabel": "Receipt actions",
+    "amount": "Amount"
+  },
+  "ReceiptZoomView": {
+    "zoomTitle": "{merchant} receipt, enlarged",
+    "zoomDescription": "Press Escape or click outside to close. Scroll or use the buttons to zoom, drag the image to pan."
+  },
+  "ReceiptDetailDialog": {
+    "added": "Added <mono>{date}</mono>",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "fullSize": "Zoom",
+    "download": "Download",
+    "amount": "Amount",
+    "purchased": "Purchased",
+    "currency": "Currency",
+    "notes": "Notes",
+    "lineItems": "Line items",
+    "itemsSummary": "{count, plural, one {# position} other {# positions}} · sums to {amount}",
+    "noItems": "No line items.",
+    "itemDescription": "Description",
+    "itemQuantity": "Qty",
+    "itemUnitPrice": "Unit price",
+    "itemTotal": "Total"
   },
   "DatePicker": {
     "chooseMonth": "Choose month",

@@ -12,6 +12,12 @@ import {
 } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
@@ -240,5 +246,38 @@ export function ReceiptZoomView({ src, alt }: ReceiptZoomViewProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+type ReceiptZoomDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  src: string | null;
+  merchant: string;
+};
+
+// Shared by the form dialog and the detail dialog: a second Dialog stacked
+// over the caller's own, reusing whatever object URL the caller already
+// holds (no second network fetch), sm:max-w-7xl -- it must stay wider than
+// either parent dialog (sm:max-w-5xl) to read as a zoom at all.
+export function ReceiptZoomDialog({
+  open,
+  onOpenChange,
+  src,
+  merchant,
+}: ReceiptZoomDialogProps) {
+  const t = useTranslations("ReceiptZoomView");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-7xl">
+        <DialogTitle className="sr-only">
+          {t("zoomTitle", { merchant })}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {t("zoomDescription")}
+        </DialogDescription>
+        {open && src && <ReceiptZoomView src={src} alt="" />}
+      </DialogContent>
+    </Dialog>
   );
 }
