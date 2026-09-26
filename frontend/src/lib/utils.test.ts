@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDateOnly, parseDateOnly } from "./utils";
+import {
+  formatDateOnly,
+  formatQuantity,
+  parseDateOnly,
+  trimQuantity,
+} from "./utils";
 
 describe("parseDateOnly / formatDateOnly", () => {
   it("round-trips a date string", () => {
@@ -23,5 +28,17 @@ describe("parseDateOnly / formatDateOnly", () => {
   it("returns null for an empty or malformed string", () => {
     expect(parseDateOnly("")).toBeNull();
     expect(parseDateOnly("not-a-date")).toBeNull();
+  });
+});
+
+describe("formatQuantity / trimQuantity", () => {
+  it("drops decimals that carry no information", () => {
+    expect(formatQuantity("1.000", "de-DE")).toBe("1");
+    expect(formatQuantity("0.500", "de-DE")).toBe("0,5");
+    expect(formatQuantity("1.250", "en-US")).toBe("1.25");
+    expect(formatQuantity("0.125", "de-DE")).toBe("0,125");
+    expect(trimQuantity("1.000")).toBe("1");
+    expect(trimQuantity("0.500")).toBe("0.5");
+    expect(trimQuantity("0.125")).toBe("0.125");
   });
 });

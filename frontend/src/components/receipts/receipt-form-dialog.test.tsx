@@ -292,7 +292,7 @@ describe("ReceiptFormDialog line items", () => {
     expect(await screen.findByLabelText("Item 1 description")).toHaveValue(
       "Milch",
     );
-    expect(screen.getByLabelText("Item 1 quantity")).toHaveValue("2.000");
+    expect(screen.getByLabelText("Item 1 quantity")).toHaveValue("2");
     expect(screen.getByLabelText("Item 1 unit price")).toHaveValue("1.29");
     expect(screen.getByLabelText("Item 1 total")).toHaveValue("2.58");
   });

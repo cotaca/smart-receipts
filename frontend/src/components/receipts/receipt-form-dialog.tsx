@@ -16,8 +16,8 @@ import {
   refreshReceiptImage,
   useReceiptImageUrl,
 } from "@/components/receipts/receipt-image";
-import { ReceiptZoomView } from "@/components/receipts/receipt-zoom-view";
-import { formatAmount } from "@/lib/utils";
+import { ReceiptZoomDialog } from "@/components/receipts/receipt-zoom-view";
+import { formatAmount, trimQuantity } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,12 @@ function ReceiptForm({
   const [notes, setNotes] = useState(receipt?.notes ?? "");
   const itemKeyCounter = useRef(receipt?.items.length ?? 0);
   const [items, setItems] = useState<ItemRow[]>(
-    () => receipt?.items.map((item, index) => ({ ...item, key: index })) ?? [],
+    () =>
+      receipt?.items.map((item, index) => ({
+        ...item,
+        quantity: trimQuantity(item.quantity),
+        key: index,
+      })) ?? [],
   );
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,6 +263,7 @@ function ReceiptForm({
         data.items.length && current.length === 0
           ? data.items.map((item) => ({
               ...item,
+              quantity: trimQuantity(item.quantity),
               key: itemKeyCounter.current++,
             }))
           : current,
@@ -889,24 +895,12 @@ function ReceiptForm({
           same image source (no second network fetch). The Dialog primitive
           gives it its own focus trap and Escape handling, closing only this
           top overlay and leaving the edit/create dialog open underneath. */}
-      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        {/* Wider than the dialog underneath (sm:max-w-5xl) -- an overlay the
-            same size as its parent would not read as a zoom at all. */}
-        <DialogContent className="sm:max-w-7xl">
-          <DialogTitle className="sr-only">
-            {t("zoomTitle", { merchant: receipt?.merchant ?? merchant })}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {t("zoomDescription")}
-          </DialogDescription>
-          {zoomOpen && (isEdit ? editImageUrl : previewUrl) && (
-            <ReceiptZoomView
-              src={(isEdit ? editImageUrl : previewUrl) as string}
-              alt=""
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <ReceiptZoomDialog
+        open={zoomOpen}
+        onOpenChange={setZoomOpen}
+        src={isEdit ? editImageUrl : previewUrl}
+        merchant={receipt?.merchant ?? merchant}
+      />
     </>
   );
 }
