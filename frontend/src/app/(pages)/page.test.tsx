@@ -57,6 +57,7 @@ const RECEIPT = receipt({});
 
 beforeEach(() => {
   vi.spyOn(api, "getReceiptImageObjectUrl").mockResolvedValue("blob:fake-url");
+  window.history.replaceState(null, "", "/");
 });
 
 // Uploads a file, then waits for the scan phase to settle so the field
@@ -519,7 +520,7 @@ describe("ReceiptsPage", () => {
     );
   });
 
-  it("deletes a receipt after confirmation and shows the preview line", async () => {
+  it("deletes a receipt from the detail dialog and closes the detail too", async () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
     vi.spyOn(api, "deleteReceipt").mockResolvedValue(undefined);
 
@@ -529,11 +530,13 @@ describe("ReceiptsPage", () => {
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole("button", { name: "Receipt actions" }));
-    // The menu opens via an async floating-ui position calculation, so its
-    // items aren't in the DOM synchronously right after the click.
-    const deleteItem = await screen.findByRole("menuitem", { name: "Delete" });
-    await user.click(deleteItem);
+    await user.click(screen.getByRole("row", { name: /Trader Joe's/ }));
+    const detailDialog = await screen.findByRole("dialog", {
+      name: "Trader Joe's",
+    });
+    await user.click(
+      within(detailDialog).getByRole("button", { name: "Delete" }),
+    );
 
     const confirmDialog = await screen.findByRole("alertdialog");
     expect(
@@ -548,5 +551,120 @@ describe("ReceiptsPage", () => {
     await waitFor(() =>
       expect(screen.queryByText("Trader Joe's")).not.toBeInTheDocument(),
     );
+    expect(
+      screen.queryByRole("dialog", { name: "Trader Joe's" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the detail dialog on row click and mirrors the id into the URL", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("row", { name: /Trader Joe's/ }));
+
+    expect(
+      await screen.findByRole("dialog", { name: "Trader Joe's" }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe("?receipt=r1"));
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Trader Joe's" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(window.location.search).toBe("");
+  });
+
+  it("opens the detail dialog on mount from a ?receipt= URL", async () => {
+    window.history.replaceState(null, "", "/?receipt=r1");
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("dialog", { name: "Trader Joe's" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not open a dialog and strips an unknown ?receipt= id", async () => {
+    window.history.replaceState(null, "", "/?receipt=does-not-exist");
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("edits a receipt from the detail dialog and reflects the change there", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+    const updated = receipt({ merchant: "Trader Joe's Renamed" });
+    vi.spyOn(api, "updateReceipt").mockResolvedValue(updated);
+
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("row", { name: /Trader Joe's/ }));
+    const detailDialog = await screen.findByRole("dialog", {
+      name: "Trader Joe's",
+    });
+    await user.click(
+      within(detailDialog).getByRole("button", { name: "Edit" }),
+    );
+
+    const editDialog = await screen.findByRole("dialog", {
+      name: "Edit receipt",
+    });
+    await user.click(
+      within(editDialog).getByRole("button", { name: "Save changes" }),
+    );
+
+    await waitFor(() => expect(api.updateReceipt).toHaveBeenCalled());
+    expect(
+      await screen.findByRole("dialog", { name: "Trader Joe's Renamed" }),
+    ).toBeInTheDocument();
+  });
+
+  it("Escape in the edit dialog (opened from detail) closes only the edit dialog", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("row", { name: /Trader Joe's/ }));
+    const detailDialog = await screen.findByRole("dialog", {
+      name: "Trader Joe's",
+    });
+    await user.click(
+      within(detailDialog).getByRole("button", { name: "Edit" }),
+    );
+    await screen.findByRole("dialog", { name: "Edit receipt" });
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Edit receipt" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Trader Joe's" }),
+    ).toBeInTheDocument();
   });
 });

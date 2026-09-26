@@ -1,21 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Delete02Icon,
-  MoreVerticalIcon,
-  PencilEdit02Icon,
-} from "@hugeicons/core-free-icons";
 
 import { ReceiptImage } from "@/components/receipts/receipt-image";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
@@ -35,15 +22,10 @@ import { formatAmount } from "@/lib/utils";
 
 type ReceiptsTableProps = {
   receipts: ReceiptPublic[];
-  onEdit: (receipt: ReceiptPublic) => void;
-  onDelete: (receipt: ReceiptPublic) => void;
+  onOpen: (receipt: ReceiptPublic) => void;
 };
 
-export function ReceiptsTable({
-  receipts,
-  onEdit,
-  onDelete,
-}: ReceiptsTableProps) {
+export function ReceiptsTable({ receipts, onOpen }: ReceiptsTableProps) {
   const t = useTranslations("ReceiptsTable");
   const { me } = useMe();
 
@@ -55,7 +37,6 @@ export function ReceiptsTable({
           <TableHead>{t("merchant")}</TableHead>
           <TableHead>{t("date")}</TableHead>
           <TableHead className="text-right">{t("amount")}</TableHead>
-          <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -63,13 +44,18 @@ export function ReceiptsTable({
           <HoverCard key={receipt.id}>
             {/* No tabIndex/aria-label here on purpose: it would add one tab
                 stop per receipt. Keyboard focus already reaches the row's
-                "…" button below, and Base UI's onFocus on the trigger
+                merchant button below, and Base UI's onFocus on the trigger
                 bubbles up from that focus, opening the card without any new
                 tab stop. Don't "fix" this by making the row focusable. */}
             <HoverCardTrigger
               delay={250}
               closeDelay={150}
-              render={<TableRow />}
+              render={
+                <TableRow
+                  className="cursor-pointer"
+                  onClick={() => onOpen(receipt)}
+                />
+              }
             >
               <TableCell>
                 <ReceiptImage
@@ -78,41 +64,24 @@ export function ReceiptsTable({
                   className="size-10 rounded-md"
                 />
               </TableCell>
-              <TableCell className="font-medium">{receipt.merchant}</TableCell>
+              <TableCell className="font-medium">
+                {/* No onClick of its own -- the click bubbles up to the
+                    row's handler above. This button exists so the merchant
+                    name is the row's one tab stop and its focus opens the
+                    hover card. */}
+                <button
+                  type="button"
+                  className="rounded-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                >
+                  {receipt.merchant}
+                </button>
+              </TableCell>
               <TableCell className="font-mono text-muted-foreground">
                 {receipt.purchased_at}
               </TableCell>
               <TableCell className="text-right font-mono">
                 {formatAmount(receipt.amount, me.number_format)}{" "}
                 {receipt.currency}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t("actionsAriaLabel")}
-                      >
-                        <HugeiconsIcon icon={MoreVerticalIcon} />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(receipt)}>
-                      <HugeiconsIcon icon={PencilEdit02Icon} />
-                      {t("edit")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => onDelete(receipt)}
-                    >
-                      <HugeiconsIcon icon={Delete02Icon} />
-                      {t("delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </TableCell>
             </HoverCardTrigger>
             <HoverCardContent side="left" align="center" sideOffset={16}>

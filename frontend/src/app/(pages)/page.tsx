@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReceiptDetailDialog } from "@/components/receipts/receipt-detail-dialog";
 import { ReceiptFormDialog } from "@/components/receipts/receipt-form-dialog";
 import { ReceiptImage } from "@/components/receipts/receipt-image";
 import { ReceiptsTable } from "@/components/receipts/receipts-table";
@@ -128,6 +129,16 @@ export default function ReceiptsPage() {
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Read once via a lazy initializer, not via useSearchParams (that would
+  // need a Suspense boundary just for this) and not via setState in an
+  // effect (React flags that as a cascading-render smell). Guarded for SSR,
+  // where `window` doesn't exist yet -- the value only matters client-side.
+  const [detailId, setDetailId] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("receipt"),
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -171,6 +182,30 @@ export default function ReceiptsPage() {
     const total = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
     return { count: receipts.length, total: total.toFixed(2), currency };
   }, [receipts]);
+
+  // Derived, not stored separately -- an edit or a delete that changes
+  // `receipts` updates or closes the detail dialog automatically.
+  const detailReceipt = receipts?.find((r) => r.id === detailId) ?? null;
+
+  // Mirrors the open detail into the URL so a reload or a shared link
+  // reopens it. Skipped while receipts hasn't loaded yet, so the initial
+  // `?receipt=<id>` read above survives long enough for `detailReceipt` to
+  // resolve instead of being stripped as "unknown".
+  useEffect(() => {
+    if (receipts === null) return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (detailReceipt) {
+      params.set("receipt", detailReceipt.id);
+    } else {
+      params.delete("receipt");
+    }
+    const query = params.toString();
+    const url = query
+      ? `${window.location.pathname}?${query}`
+      : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }, [receipts, detailId, detailReceipt]);
 
   function openCreateDialog() {
     setEditingReceipt(undefined);
@@ -317,10 +352,22 @@ export default function ReceiptsPage() {
       ) : (
         <ReceiptsTable
           receipts={visibleReceipts ?? []}
-          onEdit={openEditDialog}
-          onDelete={setDeletingReceipt}
+          onOpen={(r) => setDetailId(r.id)}
         />
       )}
+
+      {/* Stacking order matters: the detail dialog must mount before the
+          form dialog and the delete alert, so Edit/Delete from the detail
+          open on top of it instead of underneath. */}
+      <ReceiptDetailDialog
+        receipt={detailReceipt}
+        onOpenChange={(open) => {
+          if (!open) setDetailId(null);
+        }}
+        onEdit={openEditDialog}
+        onDelete={setDeletingReceipt}
+        numberFormat={me.number_format}
+      />
 
       <ReceiptFormDialog
         open={formOpen}

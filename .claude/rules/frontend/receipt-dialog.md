@@ -1,6 +1,7 @@
 ---
 paths:
   - "frontend/src/components/receipts/receipt-form-dialog*"
+  - "frontend/src/components/receipts/receipt-detail-dialog*"
   - "frontend/src/components/receipts/receipt-zoom-view*"
   - "frontend/src/components/ui/date-picker*"
   - "frontend/src/lib/utils.ts"
@@ -20,7 +21,9 @@ The create/edit `Dialog` stays props-only: `defaultCurrency` comes from the call
 
 **Replace image (edit only)**: its own hidden file input, calls `replaceReceiptImage` immediately, not on Save — deferring re-creates the JSON/multipart mix the endpoint split avoids, plus a "text saved, image didn't" state. Success: `refreshReceiptImage(id)` → `onSaved(updated)`, dialog stays open. Failure: `replaceImageError`, no `onSaved`.
 
-**Zoom**: a second `Dialog` on top, reusing the object URL already held (no second request), `sm:max-w-7xl` — it must stay wider than the parent dialog (`sm:max-w-5xl`) to read as a zoom at all. Named by an `sr-only` `DialogTitle`; `<img alt="">`. Escape closes only the zoom — its test asserts the zoom is gone **and** the Merchant field is still mounted, because both closing is the failure mode.
+**Detail dialog** (`receipt-detail-dialog.tsx`): read-only, opened from the receipts table instead of the old row "…" menu. Same `DialogContent`/body grid and height cap as the form dialog (see **Layout**/**Preview column**): at `md+` the facts column sets the row height, the image column is `md:relative` + `md:absolute md:inset-0` and its `min-h-32` wrapper scrolls a tall receipt. Unlike the form, the facts column can be very short (no notes, no items), so the body also gets `md:min-h-[min(24rem,calc(100dvh-12rem))]` — room for the image, capped by the viewport so a short landscape screen doesn't push the body past the dialog's `max-h`. Header carries the merchant as `DialogTitle` plus Edit/Delete buttons (padded clear of the built-in close X); Edit calls the same `onEdit`/`onSaved` path as the table used to, so the edit `Dialog` stacks on top of the detail one — mount order in `page.tsx` decides that, detail before form before the delete `AlertDialog`. Image column: `ReceiptImage` plus "Zoom" (via `ReceiptZoomDialog`) and "Download" (`<a download>` over the cached object URL, disabled until it resolves). Facts (Amount/Purchased/Currency) are `font-mono`; line items are a read-only `Table`, summed the same integer-cents way as the form dialog's footer. Quantity is `Numeric(10, 3)` server-side and arrives as `"1.000"`: the detail shows it via `formatQuantity` (locale, up to 3 decimals, no trailing zeros → `1`, `0,5`), the form seeds its Qty inputs (from the receipt and from OCR) via `trimQuantity` (`"1.000"` → `"1"`, dot-decimal like Amount). Not built: a Photo/PDF badge or a PDF preview tile — only images exist today, so that branch stays unbuilt like the OCR review's PDF branch.
+
+**Zoom**: `ReceiptZoomDialog` (in `receipt-zoom-view.tsx`), shared by the form dialog and the detail dialog — a second `Dialog` on top, reusing the object URL already held (no second request), `sm:max-w-7xl` — it must stay wider than the parent dialog (`sm:max-w-5xl`) to read as a zoom at all. Named by an `sr-only` `DialogTitle`; `<img alt="">`. Escape closes only the zoom — its test asserts the zoom is gone **and** the parent dialog's own title is still mounted, because both closing is the failure mode.
 
 `receipt-zoom-view.tsx` (mounted only while open, so every open starts fresh):
 - `{scale, x, y}` is one state object updated via functional `setView` — lets the wheel effect register once with `[]` deps.

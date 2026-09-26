@@ -37,16 +37,50 @@ function receipt(overrides: Partial<ReceiptPublic>): ReceiptPublic {
   };
 }
 
-function renderTable(receipts: ReceiptPublic[]) {
-  return render(
-    <MeProvider me={ME} setMe={vi.fn()}>
-      <ReceiptsTable receipts={receipts} onEdit={vi.fn()} onDelete={vi.fn()} />
-    </MeProvider>,
-  );
+function renderTable(receipts: ReceiptPublic[], onOpen = vi.fn()) {
+  return {
+    onOpen,
+    ...render(
+      <MeProvider me={ME} setMe={vi.fn()}>
+        <ReceiptsTable receipts={receipts} onOpen={onOpen} />
+      </MeProvider>,
+    ),
+  };
 }
 
 beforeEach(() => {
   vi.spyOn(api, "getReceiptImageObjectUrl").mockResolvedValue("blob:fake-url");
+});
+
+describe("ReceiptsTable row click", () => {
+  it("opens the receipt when the row is clicked", async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    renderTable([receipt({})], onOpen);
+
+    await user.click(screen.getByRole("row", { name: /Trader Joe's/ }));
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: "r1" }));
+  });
+
+  it("opens the receipt exactly once when Enter is pressed on the merchant button", async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    renderTable([receipt({})], onOpen);
+
+    await user.tab();
+    await user.keyboard("{Enter}");
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("has no 'Receipt actions' button anymore", () => {
+    renderTable([receipt({})]);
+    expect(
+      screen.queryByRole("button", { name: "Receipt actions" }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("ReceiptsTable hover preview", () => {
@@ -66,16 +100,14 @@ describe("ReceiptsTable hover preview", () => {
   });
 
   // Regression test: the row is deliberately not focusable itself. Keyboard
-  // support instead comes from onFocus bubbling up from the row's existing
-  // "…" action button, so tabbing to that button must still open the card.
-  it("opens the preview card when the row's actions button receives focus", async () => {
+  // support instead comes from onFocus bubbling up from the row's merchant
+  // button, so focusing that button must still open the card.
+  it("opens the preview card when the merchant button receives focus", async () => {
     const user = userEvent.setup();
     renderTable([receipt({})]);
 
     await user.tab();
-    expect(
-      screen.getByRole("button", { name: "Receipt actions" }),
-    ).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Trader Joe's" })).toHaveFocus();
 
     await waitFor(() =>
       expect(document.querySelectorAll("img").length).toBeGreaterThan(1),
