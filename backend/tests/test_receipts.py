@@ -5,7 +5,8 @@ from PIL import Image
 from sqlmodel import select
 
 from backend.models.receipt import ReceiptItem
-from tests.images import make_image_bytes
+from backend.services.pdf import MAX_PDF_PAGES
+from tests.images import make_image_bytes, make_multipage_pdf_bytes, make_pdf_bytes
 
 # Small enough that the preprocessing step won't downscale it, so tests that
 # care about dimensions stay independent of MAX_DIMENSION.
@@ -201,6 +202,54 @@ async def test_create_receipt_rejects_truncated_image(client):
         headers=headers,
         data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
         files={"file": ("receipt.jpg", truncated, "image/jpeg")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_create_receipt_accepts_pdf(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    pdf_bytes = make_pdf_bytes(["REWE", "SUMME 12,34"])
+
+    response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "REWE", "amount": "12.34", "purchased_at": "2024-01-15"},
+        files={"file": ("bon.pdf", pdf_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["content_type"] == "application/pdf"
+
+    image_response = await client.get(f"/receipts/{body['id']}/image", headers=headers)
+    assert image_response.status_code == 200
+    assert image_response.headers["content-type"] == "application/pdf"
+    assert image_response.content == pdf_bytes
+
+
+async def test_create_receipt_rejects_junk_declared_as_pdf(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+
+    response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
+        files={"file": ("bon.pdf", b"not a pdf", "application/pdf")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_create_receipt_rejects_pdf_with_too_many_pages(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    pdf_bytes = make_multipage_pdf_bytes(MAX_PDF_PAGES + 1)
+
+    response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
+        files={"file": ("bon.pdf", pdf_bytes, "application/pdf")},
     )
 
     assert response.status_code == 400
@@ -464,6 +513,49 @@ async def test_replace_receipt_image_rejects_unsupported_content_type(client):
     )
 
     assert response.status_code == 400
+
+
+async def test_replace_receipt_image_with_pdf(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await _create_receipt(client, headers)
+    receipt_id = create_response.json()["id"]
+    pdf_bytes = make_pdf_bytes(["REWE"])
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("bon.pdf", pdf_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["content_type"] == "application/pdf"
+
+    image_response = await client.get(f"/receipts/{receipt_id}/image", headers=headers)
+    assert image_response.headers["content-type"] == "application/pdf"
+    assert image_response.content == pdf_bytes
+
+
+async def test_replace_receipt_pdf_with_image(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    create_response = await client.post(
+        "/receipts",
+        headers=headers,
+        data={"merchant": "Shop", "amount": "1.00", "purchased_at": "2024-01-15"},
+        files={"file": ("bon.pdf", make_pdf_bytes(["Shop"]), "application/pdf")},
+    )
+    receipt_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/receipts/{receipt_id}/image",
+        headers=headers,
+        files={"file": ("new-receipt.jpg", RECEIPT_BYTES, "image/jpeg")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["content_type"] == "image/jpeg"
+
+    image_response = await client.get(f"/receipts/{receipt_id}/image", headers=headers)
+    assert image_response.headers["content-type"] == "image/jpeg"
 
 
 async def test_replace_receipt_image_requires_auth(client):

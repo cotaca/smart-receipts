@@ -1,6 +1,7 @@
 ---
 paths:
   - "backend/src/backend/services/ocr.py"
+  - "backend/src/backend/services/pdf.py"
   - "backend/scripts/ocr_benchmark.py"
   - "backend/tests/test_ocr.py"
   - "backend/tests/test_ocr_benchmark.py"
@@ -23,6 +24,10 @@ paths:
 - **Benchmark** (`backend/scripts/ocr_benchmark.py`, manual): runs the real pipeline against real receipt photos in `data/` (gitignored, not in the repo) inside the backend container, which has Tesseract. `--dump` writes each image's `(text, conf)` lines to `backend/tests/ocr_fixtures/*.json`, which `test_ocr_benchmark.py` replays with no Tesseract needed. Its core invariant: **correct or empty, never wrong** — merchant/amount/date are either the true value or `None`; the returned items' `total_price` values are a sub-multiset (`Counter`, not a set — two items can share a total) of the receipt's true totals; each returned item is also internally consistent (`quantity * unit_price == total_price`, within 0.01). Rejected approaches, both measured worse: a chain-name list (matched "NETTO" from the VAT column on an unrelated receipt) and OCR image preprocessing/binarization (made one scan's amount read *worse*, 2,08 instead of 2,00).
 - Tests: `test_ocr.py` covers the parser and the confidence-filter helpers; `test_receipt_extraction.py` mocks `backend.services.ocr.pytesseract.image_to_data` (via `tests/images.fake_ocr_data`) and asserts nothing is persisted. No endpoint test for `TesseractNotFoundError`: `ASGITransport(raise_app_exceptions=True)` re-raises instead of returning a response.
 - Tesseract ships in the backend image; native `pytest` mocks it. Running `extract_receipt_data` natively needs Tesseract with `deu` on `PATH`.
+
+## PDF extraction
+
+`extract_pdf_data` (`services/ocr.py`) tries the text layer first: `pdf_text()` (`services/pdf.py`) concatenates every page's text, and if it's non-empty, `parse_receipt_text(text)` runs directly with its default `has_header=True` — no Tesseract, no confidence filtering (a text layer has no OCR confidence to begin with, so `ReceiptExtraction.low_quality` stays its default `False`). Only when the text layer is empty (a scanned eBon with no embedded text) does it fall back to OCR: `render_pdf_pages()` rasterizes every page at `RENDER_DPI = 300` dpi, capped to `MAX_DIMENSION` on the long edge like any other image, then each page goes through `_ocr_image()` — the same Tesseract call `extract_receipt_data` uses for a photo — and the pooled `(text, conf)` lines across all pages feed `parse_ocr_lines`, exactly as for a single image. Raises whatever `open_pdf` raises (`InvalidPdfError`) plus `TesseractNotFoundError`, same translation as `extract_receipt_data`.
 
 ## Not built: other receipt languages
 

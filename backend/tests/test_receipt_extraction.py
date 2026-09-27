@@ -10,7 +10,12 @@ logic worth a dedicated case.
 
 from unittest.mock import patch
 
-from tests.images import fake_ocr_data, make_image_bytes
+from tests.images import (
+    fake_ocr_data,
+    make_image_bytes,
+    make_pdf_bytes,
+    make_scanned_pdf_bytes,
+)
 from tests.test_receipts import _register_and_auth
 
 RECEIPT_BYTES = make_image_bytes()
@@ -112,6 +117,58 @@ async def test_extract_rejects_unsupported_content_type(client):
         "/receipts/extract",
         headers=headers,
         files={"file": ("receipt.txt", b"not an image", "text/plain")},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_extract_pdf_with_text_layer_skips_ocr(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    pdf_bytes = make_pdf_bytes(["REWE Markt", "SUMME 12,34", "15.01.2024"])
+
+    with patch("backend.services.ocr.pytesseract.image_to_data") as image_to_data:
+        response = await client.post(
+            "/receipts/extract",
+            headers=headers,
+            files={"file": ("bon.pdf", pdf_bytes, "application/pdf")},
+        )
+
+    assert response.status_code == 200
+    image_to_data.assert_not_called()
+    body = response.json()
+    assert body["merchant"] == "REWE Markt"
+    assert body["amount"] == "12.34"
+    assert body["purchased_at"] == "2024-01-15"
+
+
+async def test_extract_scanned_pdf_falls_back_to_ocr(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+    pdf_bytes = make_scanned_pdf_bytes()
+
+    with patch(
+        "backend.services.ocr.pytesseract.image_to_data",
+        return_value=fake_ocr_data("REWE Markt\nSUMME 12,34"),
+    ) as image_to_data:
+        response = await client.post(
+            "/receipts/extract",
+            headers=headers,
+            files={"file": ("bon.pdf", pdf_bytes, "application/pdf")},
+        )
+
+    assert response.status_code == 200
+    image_to_data.assert_called()
+    body = response.json()
+    assert body["merchant"] == "REWE Markt"
+    assert body["amount"] == "12.34"
+
+
+async def test_extract_rejects_junk_pdf(client):
+    headers = await _register_and_auth(client, "owner@test.com")
+
+    response = await client.post(
+        "/receipts/extract",
+        headers=headers,
+        files={"file": ("bon.pdf", b"not a pdf", "application/pdf")},
     )
 
     assert response.status_code == 400

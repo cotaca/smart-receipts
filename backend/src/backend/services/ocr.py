@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 from backend.schemas.receipt import ReceiptExtraction, ReceiptLineItem
 from backend.services.image_processing import preprocess_image
+from backend.services.pdf import pdf_text, render_pdf_pages
 
 # SUMME/ZU ZAHLEN print the actual total; GESAMT/ENDBETRAG are a fallback
 # used only if neither is found, because "Gesamtbetrag" also labels a line in
@@ -325,6 +326,13 @@ def parse_ocr_lines(lines: list[tuple[str, float]]) -> ReceiptExtraction:
     return extraction.model_copy(update={"low_quality": low_quality})
 
 
+def _ocr_image(image: Image.Image) -> list[tuple[str, float]]:
+    data = pytesseract.image_to_data(
+        image, lang="deu", config=OCR_CONFIG, output_type=pytesseract.Output.DICT
+    )
+    return _ocr_lines(data)
+
+
 def extract_receipt_data(content: bytes) -> ReceiptExtraction:
     """Run OCR on an uploaded receipt image and parse the result.
 
@@ -337,7 +345,20 @@ def extract_receipt_data(content: bytes) -> ReceiptExtraction:
     """
     processed = preprocess_image(content)
     image = Image.open(io.BytesIO(processed.content))
-    data = pytesseract.image_to_data(
-        image, lang="deu", config=OCR_CONFIG, output_type=pytesseract.Output.DICT
-    )
-    return parse_ocr_lines(_ocr_lines(data))
+    return parse_ocr_lines(_ocr_image(image))
+
+
+def extract_pdf_data(content: bytes) -> ReceiptExtraction:
+    """Extract from a PDF: the text layer if there is one, else OCR its pages.
+
+    Raises whatever open_pdf raises (InvalidPdfError) plus
+    pytesseract.TesseractNotFoundError, same as extract_receipt_data.
+    """
+    text = pdf_text(content)
+    if text.strip():
+        return parse_receipt_text(text)
+
+    lines: list[tuple[str, float]] = []
+    for page_image in render_pdf_pages(content):
+        lines.extend(_ocr_image(page_image))
+    return parse_ocr_lines(lines)

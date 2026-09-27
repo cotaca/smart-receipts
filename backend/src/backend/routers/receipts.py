@@ -28,16 +28,48 @@ from backend.schemas.receipt import (
     ReceiptPublic,
     ReceiptUpdate,
 )
-from backend.services.image_processing import ImageTooLargeError, preprocess_image
-from backend.services.ocr import extract_receipt_data
+from backend.services.image_processing import (
+    ImageTooLargeError,
+    ProcessedImage,
+    preprocess_image,
+)
+from backend.services.ocr import extract_pdf_data, extract_receipt_data
+from backend.services.pdf import InvalidPdfError, validate_pdf
 from backend.services.storage import StorageBackend, get_storage_backend
 
 _ITEMS_ADAPTER = TypeAdapter(list[ReceiptLineItem])
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
 
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+ALLOWED_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "application/pdf",
+}
 MAX_FILE_SIZE = 10 * 1024 * 1024
+# Callers translate this together with OSError/DecompressionBombError/
+# ImageTooLargeError into a 400 -- one tuple shared by create, extract and
+# replace so a new failure mode can't be added to one and forgotten in another.
+_PROCESSING_ERRORS = (
+    OSError,
+    DecompressionBombError,
+    ImageTooLargeError,
+    InvalidPdfError,
+)
+
+
+def _process_upload(content: bytes, content_type: str | None) -> ProcessedImage:
+    """Branch on content type: a PDF passes through unchanged, else preprocess.
+
+    Raises _PROCESSING_ERRORS for input that fails to decode -- a PDF sent
+    with an image content type fails in Pillow, junk sent as a PDF fails in
+    PDFium; the bytes decide, not the declared header.
+    """
+    if content_type == "application/pdf":
+        return validate_pdf(content)
+    return preprocess_image(content)
 
 
 def _image_url(receipt_id: uuid.UUID) -> str:
@@ -82,7 +114,7 @@ def _get_owned_receipt(
 
 async def _read_upload(file: UploadFile) -> bytes:
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported image type")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")
 
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
@@ -118,16 +150,14 @@ async def create_receipt(
 
     content = await _read_upload(file)
 
-    # Pillow is CPU-bound and this is an async route -- decoding a 12 MP photo
-    # inline would block the event loop for every other request.
+    # Pillow/PDFium are CPU-bound and this is an async route -- decoding a
+    # 12 MP photo or opening a PDF inline would block the event loop for
+    # every other request.
     try:
-        processed = await run_in_threadpool(preprocess_image, content)
-    # OSError covers UnidentifiedImageError plus truncated/corrupt files that
-    # pass the header check but fail to decode; the other two are Pillow's
-    # and our own explicit "reject this input" signals.
-    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+        processed = await run_in_threadpool(_process_upload, content, file.content_type)
+    except _PROCESSING_ERRORS as exc:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Could not process image"
+            status.HTTP_400_BAD_REQUEST, "Could not process file"
         ) from exc
 
     storage_key = f"{current_user.id}/{uuid.uuid4()}{processed.extension}"
@@ -166,14 +196,19 @@ async def extract_receipt(
     POST /receipts/{id}).
     """
     content = await _read_upload(file)
+    extract = (
+        extract_pdf_data
+        if file.content_type == "application/pdf"
+        else extract_receipt_data
+    )
     try:
-        return await run_in_threadpool(extract_receipt_data, content)
+        return await run_in_threadpool(extract, content)
     # Same mapping as create_receipt. TesseractNotFoundError is deliberately
     # not caught here -- a missing binary is an environment problem, not bad
     # input, and should surface as a 500.
-    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+    except _PROCESSING_ERRORS as exc:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Could not process image"
+            status.HTTP_400_BAD_REQUEST, "Could not process file"
         ) from exc
 
 
@@ -243,10 +278,10 @@ async def replace_receipt_image(
     content = await _read_upload(file)
 
     try:
-        processed = await run_in_threadpool(preprocess_image, content)
-    except (OSError, DecompressionBombError, ImageTooLargeError) as exc:
+        processed = await run_in_threadpool(_process_upload, content, file.content_type)
+    except _PROCESSING_ERRORS as exc:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Could not process image"
+            status.HTTP_400_BAD_REQUEST, "Could not process file"
         ) from exc
 
     old_storage_key = receipt.storage_key
