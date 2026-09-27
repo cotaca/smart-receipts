@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, apiFetch, login, setAccessToken } from "@/lib/api";
+import { ApiError, apiFetch, login, setAccessToken, updateMe } from "@/lib/api";
 
 function json(status: number, body: unknown = {}) {
   return new Response(JSON.stringify(body), { status });
@@ -55,7 +55,24 @@ describe("apiFetch token refresh", () => {
     expect(refreshCalls).toHaveLength(1);
   });
 
-  it("does not refresh on a 401 from /auth/* (e.g. wrong password)", async () => {
+  it("refreshes and retries account calls under /auth/ (e.g. PATCH /auth/me)", async () => {
+    setAccessToken("expired");
+    const fetchMock = stubFetch((url, init) => {
+      if (url.endsWith("/auth/refresh")) {
+        return json(200, { access_token: "fresh", token_type: "bearer" });
+      }
+      return bearer(init) === "Bearer fresh"
+        ? json(200, { language: "en" })
+        : json(401);
+    });
+
+    await expect(updateMe({ language: "en" })).resolves.toEqual({
+      language: "en",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not refresh on a 401 from login (wrong password)", async () => {
     const fetchMock = stubFetch(() => json(401));
 
     await expect(login("a@b.c", "wrong")).rejects.toMatchObject({

@@ -28,9 +28,16 @@ function authHeaders(): Record<string, string> {
 
 // The access token expires after 15 minutes, but the page may stay open much
 // longer. On a 401 we refresh once via the httpOnly cookie and retry the
-// request once. Concurrent 401s share one in-flight refresh. /auth/* is
-// exempt: a 401 there means bad credentials or a dead refresh cookie, and
-// retrying would loop.
+// request once. Concurrent 401s share one in-flight refresh. The credential
+// endpoints are exempt: a 401 there means bad credentials or a dead refresh
+// cookie, and retrying would loop. Account calls (/auth/me, change-password)
+// are not -- their 401 is an expired token like anywhere else.
+const NO_REFRESH = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/logout",
+];
 let refreshing: Promise<boolean> | null = null;
 
 function refreshAccessToken(): Promise<boolean> {
@@ -67,7 +74,7 @@ async function authedFetch(
   const response = await send();
   if (
     response.status === 401 &&
-    !path.startsWith("/auth/") &&
+    !NO_REFRESH.includes(path) &&
     (await refreshAccessToken())
   ) {
     return send();
