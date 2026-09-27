@@ -1,6 +1,8 @@
+import logging
+
 import jwt
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from backend.core.config import settings
 from backend.core.db import get_session
@@ -13,15 +15,20 @@ from backend.core.security import (
     hash_password,
     verify_password,
 )
+from backend.models.receipt import Receipt
 from backend.models.user import User
 from backend.schemas.auth import (
     ChangePasswordRequest,
+    DeleteAccountRequest,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
     UserPublic,
     UserSettingsUpdate,
 )
+from backend.services.storage import StorageBackend, get_storage_backend
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 REFRESH_COOKIE_NAME = "refresh_token"
@@ -35,6 +42,18 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         secure=True,
         samesite="lax",
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+    )
+
+
+def _clear_refresh_cookie(response: Response) -> None:
+    # Attributes must mirror _set_refresh_cookie: a browser matches a cookie
+    # deletion by name *and* attributes, so a mismatched one is ignored and
+    # the original cookie survives.
+    response.delete_cookie(
+        REFRESH_COOKIE_NAME,
+        httponly=True,
+        secure=True,
+        samesite="lax",
     )
 
 
@@ -92,7 +111,7 @@ def refresh(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response):
-    response.delete_cookie(REFRESH_COOKIE_NAME)
+    _clear_refresh_cookie(response)
 
 
 @router.get("/me", response_model=UserPublic)
@@ -138,3 +157,42 @@ def change_password(
     current_user.hashed_password = hash_password(body.new_password)
     session.add(current_user)
     session.commit()
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    body: DeleteAccountRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+    storage: StorageBackend = Depends(get_storage_backend),
+):
+    """Permanently delete the current user, their receipts and images.
+
+    Hard delete, no undo. The DB row is the source of truth, so it goes
+    first: receipts (there's no `ondelete` on `receipts.user_id`, so this is
+    explicit) then the user, then commit. Only after that do we best-effort
+    delete the image files -- an orphaned file beats a live account with
+    broken images if a delete fails.
+    """
+    if not verify_password(body.password, current_user.hashed_password):
+        # 400, not 401: same reasoning as change-password -- the bearer
+        # token is valid, the wrong value is inside the body.
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Incorrect password")
+
+    storage_keys = session.exec(
+        select(Receipt.storage_key).where(Receipt.user_id == current_user.id)
+    ).all()
+    session.exec(delete(Receipt).where(Receipt.user_id == current_user.id))
+    session.delete(current_user)
+    session.commit()
+
+    for key in storage_keys:
+        try:
+            storage.delete(key)
+        except Exception:
+            logger.exception(
+                "Failed to delete receipt image %s after account deletion", key
+            )
+
+    _clear_refresh_cookie(response)

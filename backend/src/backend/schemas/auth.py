@@ -62,6 +62,12 @@ class ChangePasswordRequest(BaseModel):
     new_password: NewPassword
 
 
+class DeleteAccountRequest(BaseModel):
+    # Plain str, not NewPassword: older accounts can have a password longer
+    # than 72 bytes and must still be able to delete their account.
+    password: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

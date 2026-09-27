@@ -1,9 +1,14 @@
+import json
+
 from sqlmodel import select
 
+from backend.models.receipt import Receipt, ReceiptItem
 from backend.models.user import User
+from tests.images import make_image_bytes
 
 EMAIL = "user@test.com"
 PASSWORD = "very-secure-password"
+RECEIPT_BYTES = make_image_bytes()
 
 
 async def _register(client, email: str = EMAIL, password: str = PASSWORD):
@@ -297,3 +302,138 @@ async def test_login_still_accepts_overlong_password_input(client):
     )
 
     assert response.status_code == 401  # wrong password, not a 422
+
+
+async def _create_receipt(client, headers, items=None):
+    files = {"file": ("receipt.jpg", RECEIPT_BYTES, "image/jpeg")}
+    data = {
+        "merchant": "Trader Joe's",
+        "amount": "12.34",
+        "purchased_at": "2024-01-15",
+        "currency": "USD",
+    }
+    if items is not None:
+        data["items"] = json.dumps(items)
+    return await client.post("/receipts", headers=headers, data=data, files=files)
+
+
+async def test_delete_account_removes_user_receipts_and_image(
+    client, db_session, storage_backend
+):
+    headers = await _auth_headers(client)
+    receipt_response = await _create_receipt(
+        client,
+        headers,
+        items=[
+            {
+                "description": "Milch",
+                "quantity": "1",
+                "unit_price": "1.29",
+                "total_price": "1.29",
+            }
+        ],
+    )
+    receipt_id = receipt_response.json()["id"]
+    access_token = headers["Authorization"].removeprefix("Bearer ")
+
+    # Exercise the FK cascade for real: the item row must exist before the
+    # delete, otherwise the "gone after" assertion below is vacuous.
+    assert (
+        db_session.exec(
+            select(ReceiptItem).where(ReceiptItem.receipt_id == receipt_id)
+        ).first()
+        is not None
+    )
+
+    response = await client.request(
+        "DELETE", "/auth/me", headers=headers, json={"password": PASSWORD}
+    )
+
+    assert response.status_code == 204
+
+    refresh_response = await client.post("/auth/refresh")
+    assert refresh_response.status_code == 401
+
+    me_response = await client.get(
+        "/auth/me", headers={"Authorization": f"Bearer {access_token}"}
+    )
+    assert me_response.status_code == 401
+
+    login_response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": PASSWORD}
+    )
+    assert login_response.status_code == 401
+
+    assert (
+        db_session.exec(select(Receipt).where(Receipt.id == receipt_id)).first() is None
+    )
+    assert (
+        db_session.exec(
+            select(ReceiptItem).where(ReceiptItem.receipt_id == receipt_id)
+        ).first()
+        is None
+    )
+    assert list(storage_backend._base_path.rglob("*.jpg")) == []
+
+
+async def test_delete_account_wrong_password_returns_400_and_keeps_account(client):
+    headers = await _auth_headers(client)
+
+    response = await client.request(
+        "DELETE", "/auth/me", headers=headers, json={"password": "wrong-password"}
+    )
+
+    assert response.status_code == 400
+
+    login_response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": PASSWORD}
+    )
+    assert login_response.status_code == 200
+
+
+async def test_delete_account_without_token_returns_401(client):
+    response = await client.request("DELETE", "/auth/me", json={"password": PASSWORD})
+
+    assert response.status_code == 401
+
+
+async def test_delete_account_leaves_other_users_receipts_untouched(client):
+    other_headers = await _auth_headers(client)
+    other_receipt = await _create_receipt(client, other_headers)
+    other_receipt_id = other_receipt.json()["id"]
+
+    victim_headers = await _register(client, email="victim@test.com")
+    victim_token = victim_headers.json()["access_token"]
+    victim_headers = {"Authorization": f"Bearer {victim_token}"}
+
+    response = await client.request(
+        "DELETE", "/auth/me", headers=victim_headers, json={"password": PASSWORD}
+    )
+    assert response.status_code == 204
+
+    get_response = await client.get(
+        f"/receipts/{other_receipt_id}", headers=other_headers
+    )
+    assert get_response.status_code == 200
+
+
+async def test_delete_account_succeeds_even_if_storage_delete_raises(
+    client, storage_backend, monkeypatch
+):
+    headers = await _auth_headers(client)
+    await _create_receipt(client, headers)
+
+    def _raise(key):
+        raise OSError("disk on fire")
+
+    monkeypatch.setattr(storage_backend, "delete", _raise)
+
+    response = await client.request(
+        "DELETE", "/auth/me", headers=headers, json={"password": PASSWORD}
+    )
+
+    assert response.status_code == 204
+    login_response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": PASSWORD}
+    )
+    assert login_response.status_code == 401
