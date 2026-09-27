@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Pdf01Icon } from "@hugeicons/core-free-icons";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { getReceiptImageObjectUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+export const isPdf = (contentType: string) => contentType === "application/pdf";
+
 type ReceiptImageProps = {
   receiptId: string;
   alt: string;
   className?: string;
+  // A PDF has no thumbnail worth fetching (no thumbnail endpoint, and a full
+  // PDF download per table row would be wasteful) -- show a static icon tile
+  // instead and skip the fetch entirely.
+  pdf?: boolean;
 };
 
 // Shared, ref-counted object-URL cache: the row thumbnail and the hover
@@ -111,8 +119,34 @@ export function useReceiptImageUrl(receiptId: string): string | null {
   return url;
 }
 
-export function ReceiptImage({ receiptId, alt, className }: ReceiptImageProps) {
-  const url = useReceiptImageUrl(receiptId);
+export function ReceiptImage({
+  receiptId,
+  alt,
+  className,
+  pdf,
+}: ReceiptImageProps) {
+  // "" is useReceiptImageUrl's existing no-op case (no receipt yet) -- reuse
+  // it for the pdf tile so this never fetches the full PDF just to skip it.
+  const url = useReceiptImageUrl(pdf ? "" : receiptId);
+
+  if (pdf) {
+    // Empty alt means decorative (e.g. the hover preview) -- hide it from
+    // the accessibility tree entirely instead of announcing an empty label.
+    const a11yProps = alt
+      ? { role: "img" as const, "aria-label": alt }
+      : { "aria-hidden": true as const };
+    return (
+      <div
+        {...a11yProps}
+        className={cn(
+          "flex items-center justify-center bg-muted text-muted-foreground",
+          className,
+        )}
+      >
+        <HugeiconsIcon icon={Pdf01Icon} />
+      </div>
+    );
+  }
 
   if (!url) {
     return <Skeleton className={className} />;
@@ -122,4 +156,32 @@ export function ReceiptImage({ receiptId, alt, className }: ReceiptImageProps) {
   // optimization pipeline doesn't apply here — a plain <img> is correct.
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt={alt} className={cn("object-cover", className)} />;
+}
+
+// A PDF viewed in a dialog: the browser's native PDF renderer inside an
+// iframe. No `sandbox` -- Chrome's built-in PDF viewer doesn't render inside
+// a sandboxed iframe, and the source is the user's own authenticated file
+// (an object URL from the same cache ReceiptImage/Download use), not
+// third-party content. `#toolbar=0` hides Chrome/Edge's viewer toolbar
+// (the dialog has its own Download); other viewers ignore it. The viewer's
+// scrollbar lives in the plugin's own document -- page CSS can't style it.
+export function ReceiptPdfFrame({
+  src,
+  title,
+  className,
+}: {
+  src: string | null;
+  title: string;
+  className?: string;
+}) {
+  if (!src) {
+    return <Skeleton className={className} />;
+  }
+  return (
+    <iframe
+      src={`${src}#toolbar=0`}
+      title={title}
+      className={cn("h-full min-h-96 w-full rounded-md border", className)}
+    />
+  );
 }

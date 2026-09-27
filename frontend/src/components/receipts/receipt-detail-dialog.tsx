@@ -11,7 +11,9 @@ import {
 } from "@hugeicons/core-free-icons";
 
 import {
+  isPdf,
   ReceiptImage,
+  ReceiptPdfFrame,
   useReceiptImageUrl,
 } from "@/components/receipts/receipt-image";
 import { ReceiptZoomDialog } from "@/components/receipts/receipt-zoom-view";
@@ -83,6 +85,7 @@ function ReceiptDetailContent({
 }: ReceiptDetailContentProps) {
   const t = useTranslations("ReceiptDetailDialog");
   const [zoomOpen, setZoomOpen] = useState(false);
+  const pdf = isPdf(receipt.content_type);
   // Same cached object URL ReceiptImage displays -- Zoom/Download never
   // trigger a second network fetch.
   const imageUrl = useReceiptImageUrl(receipt.id);
@@ -135,13 +138,21 @@ function ReceiptDetailContent({
       <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto md:min-h-[min(24rem,calc(100dvh-12rem))] md:grid-cols-[320px_minmax(0,1fr)]">
         <div className="md:relative">
           <div className="flex flex-col gap-2 md:absolute md:inset-0">
-            <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin] md:max-h-none">
-              <ReceiptImage
-                receiptId={receipt.id}
-                alt={receipt.merchant}
-                className="h-auto w-full"
+            {pdf ? (
+              <ReceiptPdfFrame
+                src={imageUrl}
+                title={t("pdfFrameTitle", { merchant: receipt.merchant })}
+                className="min-h-32 md:h-full"
               />
-            </div>
+            ) : (
+              <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin] md:max-h-none">
+                <ReceiptImage
+                  receiptId={receipt.id}
+                  alt={receipt.merchant}
+                  className="h-auto w-full"
+                />
+              </div>
+            )}
             <div className="flex flex-none gap-2">
               {imageUrl ? (
                 <Button
@@ -160,15 +171,19 @@ function ReceiptDetailContent({
                   {t("download")}
                 </Button>
               )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setZoomOpen(true)}
-              >
-                <HugeiconsIcon icon={ZoomInAreaIcon} />
-                {t("fullSize")}
-              </Button>
+              {/* PDFs zoom via the browser's own PDF viewer inside the
+                  iframe -- a second overlay would be redundant. */}
+              {!pdf && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoomOpen(true)}
+                >
+                  <HugeiconsIcon icon={ZoomInAreaIcon} />
+                  {t("fullSize")}
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -55,3 +55,21 @@ describe("refreshReceiptImage", () => {
     expect(api.getReceiptImageObjectUrl).not.toHaveBeenCalled();
   });
 });
+
+describe("ReceiptImage pdf tile", () => {
+  it("renders a labelled tile and never fetches the PDF", async () => {
+    render(<ReceiptImage receiptId="r1" alt="REWE receipt" pdf />);
+
+    expect(
+      screen.getByRole("img", { name: "REWE receipt" }),
+    ).toBeInTheDocument();
+    expect(api.getReceiptImageObjectUrl).not.toHaveBeenCalled();
+  });
+
+  it("hides a decorative tile (empty alt) from the accessibility tree", () => {
+    const { container } = render(<ReceiptImage receiptId="r1" alt="" pdf />);
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(container.querySelector("[aria-hidden='true']")).toBeInTheDocument();
+  });
+});

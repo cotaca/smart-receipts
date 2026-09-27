@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import { ReceiptImage } from "@/components/receipts/receipt-image";
+import { isPdf, ReceiptImage } from "@/components/receipts/receipt-image";
 import {
   HoverCard,
   HoverCardContent,
@@ -62,6 +62,7 @@ export function ReceiptsTable({ receipts, onOpen }: ReceiptsTableProps) {
                   receiptId={receipt.id}
                   alt={receipt.merchant}
                   className="size-10 rounded-md"
+                  pdf={isPdf(receipt.content_type)}
                 />
               </TableCell>
               <TableCell className="font-medium">
@@ -84,13 +85,16 @@ export function ReceiptsTable({ receipts, onOpen }: ReceiptsTableProps) {
                 {receipt.currency}
               </TableCell>
             </HoverCardTrigger>
-            <HoverCardContent side="left" align="center" sideOffset={16}>
-              <ReceiptImage
-                receiptId={receipt.id}
-                alt=""
-                className="max-h-[70vh] w-full rounded-md object-contain"
-              />
-            </HoverCardContent>
+            {/* No hover preview for PDFs: an icon tile adds nothing. */}
+            {!isPdf(receipt.content_type) && (
+              <HoverCardContent side="left" align="center" sideOffset={16}>
+                <ReceiptImage
+                  receiptId={receipt.id}
+                  alt=""
+                  className="max-h-[70vh] w-full rounded-md object-contain"
+                />
+              </HoverCardContent>
+            )}
           </HoverCard>
         ))}
       </TableBody>

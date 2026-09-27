@@ -12,7 +12,9 @@ import {
 } from "@hugeicons/core-free-icons";
 
 import {
+  isPdf,
   ReceiptImage,
+  ReceiptPdfFrame,
   refreshReceiptImage,
   useReceiptImageUrl,
 } from "@/components/receipts/receipt-image";
@@ -203,6 +205,8 @@ function ReceiptForm({
   // Edit mode reuses the same cached object URL ReceiptImage displays, so
   // the zoom overlay never triggers a second network fetch.
   const editImageUrl = useReceiptImageUrl(receipt?.id ?? "");
+  const isEditPdf = isEdit && receipt ? isPdf(receipt.content_type) : false;
+  const isCreatePdf = file?.type === "application/pdf";
 
   // Local object URL for the create-mode preview. Created during render via
   // useMemo (not useState+useEffect — that would call setState synchronously
@@ -434,7 +438,7 @@ function ReceiptForm({
                   ref={fileInputRef}
                   id="file"
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
                   className="sr-only"
                   onChange={(e) =>
                     handleFileChange(e.target.files?.[0] ?? null)
@@ -452,13 +456,29 @@ function ReceiptForm({
               </div>
 
               {isEdit && receipt ? (
-                <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin] md:max-h-none">
-                  <ReceiptImage
-                    receiptId={receipt.id}
-                    alt={receipt.merchant}
-                    className="h-auto w-full"
+                isEditPdf ? (
+                  <ReceiptPdfFrame
+                    src={editImageUrl}
+                    title={t("pdfFrameTitle", { merchant: receipt.merchant })}
+                    className="min-h-32 md:h-full"
                   />
-                </div>
+                ) : (
+                  <div className="max-h-64 min-h-32 w-full overflow-y-auto rounded-lg bg-muted [scrollbar-width:thin] md:max-h-none">
+                    <ReceiptImage
+                      receiptId={receipt.id}
+                      alt={receipt.merchant}
+                      className="h-auto w-full"
+                    />
+                  </div>
+                )
+              ) : previewUrl && isCreatePdf ? (
+                <ReceiptPdfFrame
+                  src={previewUrl}
+                  title={t("pdfFrameTitle", {
+                    merchant: merchant || t("pdfFrameTitleFallback"),
+                  })}
+                  className="min-h-32 md:h-full"
+                />
               ) : previewUrl ? (
                 // Local blob preview — the file never left the browser yet, so
                 // this can't go through ReceiptImage (which fetches from the API).
@@ -496,15 +516,17 @@ function ReceiptForm({
                     {t("replaceFile")}
                     {isExtracting && <Spinner />}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setZoomOpen(true)}
-                  >
-                    <HugeiconsIcon icon={ZoomInAreaIcon} />
-                    {t("zoom")}
-                  </Button>
+                  {!isCreatePdf && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setZoomOpen(true)}
+                    >
+                      <HugeiconsIcon icon={ZoomInAreaIcon} />
+                      {t("zoom")}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -514,7 +536,7 @@ function ReceiptForm({
                     ref={replaceFileInputRef}
                     id="replace-file"
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic"
+                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
                     className="sr-only"
                     onChange={(e) => {
                       void handleReplaceImage(e.target.files?.[0] ?? null);
@@ -539,15 +561,17 @@ function ReceiptForm({
                       )}
                       {t("replaceFile")}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setZoomOpen(true)}
-                    >
-                      <HugeiconsIcon icon={ZoomInAreaIcon} />
-                      {t("zoom")}
-                    </Button>
+                    {!isEditPdf && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setZoomOpen(true)}
+                      >
+                        <HugeiconsIcon icon={ZoomInAreaIcon} />
+                        {t("zoom")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}

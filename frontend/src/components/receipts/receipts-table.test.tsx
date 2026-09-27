@@ -99,6 +99,19 @@ describe("ReceiptsTable hover preview", () => {
     );
   });
 
+  it("shows no preview card for a PDF receipt", async () => {
+    const user = userEvent.setup();
+    renderTable([receipt({ content_type: "application/pdf" })]);
+
+    await user.hover(screen.getByRole("row", { name: /Trader Joe's/ }));
+
+    // Past the 250ms open delay, so a card would have mounted by now.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(
+      document.querySelector('[data-slot="hover-card-content"]'),
+    ).not.toBeInTheDocument();
+  });
+
   // Regression test: the row is deliberately not focusable itself. Keyboard
   // support instead comes from onFocus bubbling up from the row's merchant
   // button, so focusing that button must still open the card.

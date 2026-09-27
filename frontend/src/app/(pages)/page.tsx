@@ -43,7 +43,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReceiptDetailDialog } from "@/components/receipts/receipt-detail-dialog";
 import { ReceiptFormDialog } from "@/components/receipts/receipt-form-dialog";
-import { ReceiptImage } from "@/components/receipts/receipt-image";
+import { isPdf, ReceiptImage } from "@/components/receipts/receipt-image";
 import { ReceiptsTable } from "@/components/receipts/receipts-table";
 import { deleteReceipt, listReceipts, type ReceiptPublic } from "@/lib/api";
 import { useMe } from "@/lib/me-context";
@@ -399,6 +399,7 @@ export default function ReceiptsPage() {
                 receiptId={deletingReceipt.id}
                 alt={deletingReceipt.merchant}
                 className="size-9 flex-none rounded-md"
+                pdf={isPdf(deletingReceipt.content_type)}
               />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="truncate text-xs font-medium text-foreground">

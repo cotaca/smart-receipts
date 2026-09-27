@@ -156,4 +156,20 @@ describe("ReceiptDetailDialog", () => {
     renderDialog(null);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("shows a PDF iframe and no Zoom button, but keeps Download", async () => {
+    renderDialog(receipt({ content_type: "application/pdf" }));
+
+    // Viewer toolbar hidden; Download keeps the plain object URL.
+    expect(await screen.findByTitle(/receipt PDF/i)).toHaveAttribute(
+      "src",
+      "blob:fake-url#toolbar=0",
+    );
+    expect(
+      screen.queryByRole("button", { name: /^Zoom$/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: /Download/ }),
+    ).toHaveAttribute("href", "blob:fake-url");
+  });
 });

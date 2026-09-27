@@ -145,6 +145,44 @@ describe("ReceiptFormDialog image controls", () => {
     // this, the test above passes just as happily if both dialogs closed.
     expect(screen.getByLabelText(/Merchant/)).toBeInTheDocument();
   });
+
+  it("shows a PDF iframe instead of an image when a PDF is selected, and no Zoom", async () => {
+    // jsdom navigates blob:/about: iframes (with the #toolbar=0 fragment)
+    // into an opaque origin and throws a SecurityError; an http URL isn't
+    // loaded at all without resource loading enabled.
+    vi.spyOn(URL, "createObjectURL").mockReturnValue(
+      "http://localhost/fake.pdf",
+    );
+    renderDialog(undefined);
+
+    const file = new File(["%PDF-1.4"], "bon.pdf", {
+      type: "application/pdf",
+    });
+    vi.spyOn(api, "extractReceipt").mockResolvedValue({
+      merchant: "REWE",
+      amount: "12.34",
+      purchased_at: "2024-01-15",
+      items: [],
+      low_quality: false,
+    });
+    const user = userEvent.setup();
+    await user.upload(screen.getByLabelText(/^Receipt image/), file);
+
+    await waitFor(() => expect(api.extractReceipt).toHaveBeenCalledWith(file));
+    expect(await screen.findByTitle(/receipt PDF/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Zoom/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a PDF iframe in edit mode for a PDF receipt, and no Zoom", async () => {
+    renderDialog({ ...RECEIPT, content_type: "application/pdf" });
+
+    expect(await screen.findByTitle(/receipt PDF/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Zoom/ }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("ReceiptFormDialog date picker", () => {
