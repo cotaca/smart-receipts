@@ -7,6 +7,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +47,8 @@ import { useTheme, type ThemeMode } from "@/hooks/use-theme";
 import {
   ApiError,
   changePassword,
+  deleteAccount,
+  setAccessToken,
   updateMe,
   type Currency,
   type Language,
@@ -65,6 +76,7 @@ export default function SettingsPage() {
   const { me, setMe } = useMe();
   const [settingsError, setSettingsError] = useState("");
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Saved automatically, no Save button -- and no optimistic update: `me`
   // (and therefore every Tabs/Select below, since they're controlled by it)
@@ -249,11 +261,29 @@ export default function SettingsPage() {
             {t("changePassword")}
           </Button>
         </CardContent>
+        <CardContent className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+          <span className="text-xs font-medium text-foreground">
+            {t("deleteAccount")}
+          </span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            {t("deleteAccount")}
+          </Button>
+        </CardContent>
       </Card>
 
       <ChangePasswordDialog
         open={passwordDialogOpen}
         onOpenChange={setPasswordDialogOpen}
+      />
+
+      <DeleteAccountDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
       />
     </main>
   );
@@ -353,6 +383,95 @@ function ChangePasswordForm({
             {t("changePassword")}
           </Button>
         </DialogFooter>
+      </form>
+    </>
+  );
+}
+
+function DeleteAccountDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        {/* Only mounted while open, so reopening always starts from a blank
+            password field -- same pattern as ChangePasswordDialog. */}
+        {open && <DeleteAccountForm />}
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function DeleteAccountForm() {
+  const t = useTranslations("SettingsPage");
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      await deleteAccount(password);
+      setAccessToken(null);
+      router.replace("/login");
+    } catch (err) {
+      // 400 means "wrong password" (see routers/auth.py) -- any other
+      // status is an unrelated failure.
+      setError(
+        err instanceof ApiError && err.status === 400
+          ? t("wrongPassword")
+          : t("genericError"),
+      );
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{t("deleteAccount")}</AlertDialogTitle>
+        <AlertDialogDescription>
+          {t("deleteAccountDescription")}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        {error && (
+          <Alert variant="destructive">
+            <HugeiconsIcon icon={AlertCircleIcon} />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="delete-account-password">
+            {t("deleteAccountConfirmLabel")}
+          </Label>
+          <Input
+            id="delete-account-password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+          <Button type="submit" variant="destructive" disabled={isSubmitting}>
+            {isSubmitting && <Spinner />}
+            {t("deleteAccount")}
+          </Button>
+        </AlertDialogFooter>
       </form>
     </>
   );

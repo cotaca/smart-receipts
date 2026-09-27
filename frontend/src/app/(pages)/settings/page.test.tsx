@@ -12,11 +12,12 @@ import deMessages from "../../../../messages/de.json";
 import SettingsPage from "./page";
 
 const routerRefresh = vi.fn();
+const routerReplace = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
-    replace: vi.fn(),
+    replace: routerReplace,
     refresh: routerRefresh,
   }),
 }));
@@ -45,6 +46,7 @@ function renderSettings(me: Me = ME, setMe = vi.fn()) {
 beforeEach(() => {
   localStorage.clear();
   routerRefresh.mockClear();
+  routerReplace.mockClear();
   document.cookie = "locale=; Path=/; Max-Age=0";
 });
 
@@ -125,6 +127,55 @@ describe("SettingsPage", () => {
       ).toBeInTheDocument(),
     );
     expect(dialog).toBeInTheDocument();
+  });
+
+  it("shows an inline error when the delete-account password is wrong", async () => {
+    vi.spyOn(api, "deleteAccount").mockRejectedValue(
+      new api.ApiError(400, "Incorrect password"),
+    );
+
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: "Delete account" }));
+    const dialog = screen.getByRole("alertdialog");
+    await user.type(
+      within(dialog).getByLabelText("Enter your password to confirm"),
+      "wrong-password",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete account" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByText("Password is incorrect."),
+      ).toBeInTheDocument(),
+    );
+    expect(dialog).toBeInTheDocument();
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("deletes the account and redirects to login on success", async () => {
+    vi.spyOn(api, "deleteAccount").mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: "Delete account" }));
+    const dialog = screen.getByRole("alertdialog");
+    await user.type(
+      within(dialog).getByLabelText("Enter your password to confirm"),
+      "correct-password",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete account" }),
+    );
+
+    await waitFor(() =>
+      expect(api.deleteAccount).toHaveBeenCalledWith("correct-password"),
+    );
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/login"));
   });
 
   it("switching language calls updateMe and syncs the locale cookie", async () => {

@@ -186,6 +186,13 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+export function deleteAccount(password: string) {
+  return apiFetch<void>("/auth/me", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export type ReceiptItem = {
   description: string;
   quantity: string;

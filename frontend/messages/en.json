@@ -103,7 +103,12 @@
     "currentPasswordLabel": "Current password",
     "newPasswordLabel": "New password",
     "wrongCurrentPassword": "Current password is incorrect.",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "deleteAccount": "Delete account",
+    "deleteAccountDescription": "This permanently deletes your account, all receipts and their images. This cannot be undone.",
+    "deleteAccountConfirmLabel": "Enter your password to confirm",
+    "wrongPassword": "Password is incorrect.",
+    "cancel": "Cancel"
   },
   "ReceiptFormDialog": {
     "editTitle": "Edit receipt",

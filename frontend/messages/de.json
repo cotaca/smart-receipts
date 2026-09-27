@@ -103,7 +103,12 @@
     "currentPasswordLabel": "Aktuelles Passwort",
     "newPasswordLabel": "Neues Passwort",
     "wrongCurrentPassword": "Das aktuelle Passwort ist falsch.",
-    "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+    "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountDescription": "Dies löscht dein Konto sowie alle Belege und deren Bilder endgültig. Das kann nicht rückgängig gemacht werden.",
+    "deleteAccountConfirmLabel": "Gib dein Passwort ein, um zu bestätigen",
+    "wrongPassword": "Das Passwort ist falsch.",
+    "cancel": "Abbrechen"
   },
   "ReceiptFormDialog": {
     "editTitle": "Beleg bearbeiten",
