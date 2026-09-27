@@ -9,12 +9,12 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 - **Accounts** — register, login, logout, refresh. Access token in memory, refresh token in an httpOnly cookie.
 - **Receipts** — upload an image, edit, delete, list. Images are served through an authenticated route, never a public file mount, and you only ever see your own.
 - **Image preprocessing** — every upload is auto-rotated by its EXIF orientation, capped at 2000px on the longest edge and re-encoded to JPEG. HEIC from iPhones is accepted and converted. All metadata is stripped, so the GPS coordinates in a phone photo never reach storage.
-- **OCR extraction** — pick a receipt photo and merchant, total and purchase date are filled in for you, via Tesseract. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before. The upload dialog shows the scan next to the fields and marks each one as suggested or not detected.
+- **OCR extraction** — pick a receipt photo and merchant, total, purchase date and line items are filled in for you, via Tesseract. Hard-to-read scans get a warning. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before. The upload dialog shows the scan next to the fields and marks each one as suggested or not detected.
 - **Search, filter, sort** — find receipts by merchant, narrow them to a period, order by date or amount. All client-side over the already-loaded list.
 - **Settings** — number format (`1.234,56` vs `1,234.56`), default currency and UI language (German/English) live on your account and follow you between devices. Theme (light/dark/system) stays per device. Password changes happen here too.
 - **German and English UI** — every screen is fully translated (see `frontend/messages/`); switch languages in Settings. OCR stays German-only for now (see ARCHITECTURE.md).
 
-Not built yet: PDF e-receipts, line-item extraction, the analytics dashboard, deleting your account.
+Not built yet: PDF e-receipts, the analytics dashboard, deleting your account.
 
 ## Tech Stack
 

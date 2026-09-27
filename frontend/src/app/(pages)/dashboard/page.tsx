@@ -12,9 +12,9 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 
-// Placeholder — spend analytics need the planned ReceiptItem line-item table
-// (see "Future: product-level analytics" in ARCHITECTURE.md) before this can
-// show anything real.
+// Placeholder — line items are stored (see .claude/rules/backend/receipts-api.md),
+// but the analytics backend this page needs is not built yet, so it can
+// show nothing real.
 export default function DashboardPage() {
   const t = useTranslations("DashboardPage");
 
