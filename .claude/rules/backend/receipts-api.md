@@ -40,4 +40,4 @@ PDF metadata is **not** stripped (unlike image EXIF, see below) — rewriting a 
 
 ## Not built
 
-- A sum check of items against the receipt total (add it once OCR line-item extraction is shown to be reliably off), an item category, analytics endpoints, dragging rows to reorder.
+- A sum check of items against the receipt total (add it once OCR line-item extraction is shown to be reliably off), an item category, dragging rows to reorder.
