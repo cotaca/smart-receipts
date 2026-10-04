@@ -66,8 +66,30 @@
     "delete": "Delete"
   },
   "DashboardPage": {
-    "title": "Dashboard coming soon",
-    "description": "Spend analytics are on the way."
+    "title": "Dashboard",
+    "loadError": "Couldn't load the dashboard. Please try again.",
+    "periodAriaLabel": "Period",
+    "periodLast12Months": "Last 12 months",
+    "periodThisYear": "This year",
+    "periodLastYear": "Last year",
+    "emptyTitle": "No receipts yet",
+    "emptyDescription": "Upload your first receipt to see your spending here.",
+    "uploadReceipt": "Upload receipt",
+    "excludedHint": "{count, plural, one {# receipt in another currency is} other {# receipts in other currencies are}} not counted. Only {currency} is shown.",
+    "kpiSpent": "Spent this month",
+    "changeVsLast": "<mono>{change}</mono> vs last month",
+    "kpiAverage": "Average basket",
+    "acrossReceipts": "across <mono>{count}</mono> {count, plural, one {receipt} other {receipts}} this month",
+    "kpiBusiest": "Busiest merchant",
+    "busiestDetail": "<mono>{count}</mono> {count, plural, one {receipt} other {receipts}} · <mono>{amount}</mono>",
+    "spendTitle": "Spend per month",
+    "tabMonthly": "Monthly",
+    "tabQuarterly": "Quarterly",
+    "topMerchants": "Top merchants",
+    "topProducts": "Most-bought products",
+    "noData": "No data in this period.",
+    "recentTitle": "Recent receipts",
+    "viewAll": "View all"
   },
   "SettingsPage": {
     "title": "Settings",

@@ -66,8 +66,30 @@
     "delete": "Löschen"
   },
   "DashboardPage": {
-    "title": "Dashboard folgt in Kürze",
-    "description": "Ausgabenauswertungen sind in Arbeit."
+    "title": "Dashboard",
+    "loadError": "Das Dashboard konnte nicht geladen werden. Bitte erneut versuchen.",
+    "periodAriaLabel": "Zeitraum",
+    "periodLast12Months": "Letzte 12 Monate",
+    "periodThisYear": "Dieses Jahr",
+    "periodLastYear": "Letztes Jahr",
+    "emptyTitle": "Noch keine Belege",
+    "emptyDescription": "Lade deinen ersten Beleg hoch, um hier deine Ausgaben zu sehen.",
+    "uploadReceipt": "Beleg hochladen",
+    "excludedHint": "{count, plural, one {# Beleg in einer anderen Währung wird} other {# Belege in anderen Währungen werden}} nicht mitgezählt. Angezeigt wird nur {currency}.",
+    "kpiSpent": "Ausgaben diesen Monat",
+    "changeVsLast": "<mono>{change}</mono> ggü. Vormonat",
+    "kpiAverage": "Durchschnittlicher Einkauf",
+    "acrossReceipts": "über <mono>{count}</mono> {count, plural, one {Beleg} other {Belege}} in diesem Monat",
+    "kpiBusiest": "Häufigster Händler",
+    "busiestDetail": "<mono>{count}</mono> {count, plural, one {Beleg} other {Belege}} · <mono>{amount}</mono>",
+    "spendTitle": "Ausgaben pro Monat",
+    "tabMonthly": "Monatlich",
+    "tabQuarterly": "Quartalsweise",
+    "topMerchants": "Top-Händler",
+    "topProducts": "Meistgekaufte Produkte",
+    "noData": "Keine Daten in diesem Zeitraum.",
+    "recentTitle": "Letzte Belege",
+    "viewAll": "Alle anzeigen"
   },
   "SettingsPage": {
     "title": "Einstellungen",

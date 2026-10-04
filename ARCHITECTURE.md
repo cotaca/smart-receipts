@@ -17,6 +17,7 @@ that motivated them.
 | [UI conventions](.claude/rules/frontend/ui.md) | design reference, Base UI specifics, `Select` traps, jsdom limits |
 | [Receipt dialog](.claude/rules/frontend/receipt-dialog.md) | OCR review flow, replace image, zoom/pan, date picker, detail view |
 | [Receipts list](.claude/rules/frontend/receipts-list.md) | client-side filters, ref-counted image cache, hover preview, detail via `?receipt=` |
+| [Dashboard](.claude/rules/dashboard.md) | currency filter, period semantics, client-sent `today`, grouping keys, count vs quantity, partial quarters |
 | [Settings & i18n](.claude/rules/frontend/settings-i18n.md) | no optimistic update, theme store, number format vs. language, locale cookie |
 | [Frontend tests](.claude/rules/frontend/testing.md) | test patterns and what jsdom can't prove |
 | [CI & environment](.claude/rules/ci.md) | workflows, env vars, Node pin |

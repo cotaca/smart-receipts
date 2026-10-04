@@ -12,10 +12,9 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 - **PDF e-receipts** — a PDF eBon is stored unchanged. Its text layer is read directly when there is one; a scanned PDF with no text layer falls back to the same OCR pipeline as a photo.
 - **OCR extraction** — pick a receipt photo (or a scanned PDF) and merchant, total, purchase date and line items are filled in for you, via Tesseract. Hard-to-read scans get a warning. German receipts only for now. Everything stays editable; if extraction finds nothing or fails, manual entry works exactly as before. The upload dialog shows the scan next to the fields and marks each one as suggested or not detected.
 - **Search, filter, sort** — find receipts by merchant, narrow them to a period, order by date or amount. All client-side over the already-loaded list.
+- **Dashboard** — this month vs last month, average basket, busiest merchant, spend per month (monthly or quarterly), top merchants and most-bought products for a chosen period, recent receipts. Only receipts in your default currency are counted; a hint says how many others were left out.
 - **Settings** — number format (`1.234,56` vs `1,234.56`), default currency and UI language (German/English) live on your account and follow you between devices. Theme (light/dark/system) stays per device. Password changes happen here too.
 - **German and English UI** — every screen is fully translated (see `frontend/messages/`); switch languages in Settings. OCR stays German-only for now (see ARCHITECTURE.md).
-
-Not built yet: the analytics dashboard.
 
 ## Tech Stack
 

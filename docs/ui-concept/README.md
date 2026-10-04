@@ -36,15 +36,14 @@ Feld, Passwort-Auge als Suffix), Input, Button, Spinner (Submit), Alert
 Redirecting…"). Theme-Toggle als Text-Button im Footer.
 → vollständig mit vorhandenen Primitives baubar.
 
-### `Screen-Dashboard` — Auswertungen (geplant, Backend fehlt)
+### `Screen-Dashboard` — Auswertungen (gebaut)
 Sidebar, Avatar, DropdownMenu (Account), Card (3 KPI-Tiles: Monatsausgaben,
-Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart* (Spend
+Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart (Spend
 per month, Recharts), Progress (Top-Merchant-Balken), Table (Most-bought
 products), Separator, Badge, Select (Zeitraum „Last 12 months"). Mobile: Bottom-Nav
 als eigenes Layout + Sheet für das Menü.
-Hinweis im Mockup: „Most-bought products — needs line items" — die `ReceiptItem`-Tabelle
-ist inzwischen gebaut (siehe `.claude/rules/backend/receipts-api.md`), diese Auswertung
-selbst (Dashboard-Backend) fehlt weiterhin.
+Der Mobile-Bottom-Nav des Mockups ist nicht gebaut; die Sidebar der Shell reicht.
+Siehe `.claude/rules/dashboard.md`.
 
 ### `Screen-ReceiptsToday` — Liste im heutigen Umfang
 Card, InputGroup (Suche), Select (Zeitraum, Sortierung), Button („Upload receipt"),
@@ -103,8 +102,8 @@ browser."
 ## Sammel-Liste der fehlenden Primitives
 
 ```
-npx shadcn@latest add breadcrumb pagination toggle-group chart
+npx shadcn@latest add breadcrumb pagination toggle-group
 ```
 
-Nur das dazunehmen, was der gerade gebaute Screen wirklich braucht — `chart` zieht
-spürbar Code und Recharts als Dependency nach.
+Nur das dazunehmen, was der gerade gebaute Screen wirklich braucht — jedes Primitive
+zieht Code und teils Dependencies nach.

@@ -309,3 +309,31 @@ export function replaceReceiptImage(id: string, file: File) {
     body: formData,
   });
 }
+
+export type DashboardPeriod = "last-12-months" | "this-year" | "last-year";
+
+export type DashboardRanked = { name: string; count: number; total: string };
+
+export type Dashboard = {
+  currency: string;
+  excluded_count: number;
+  this_month: string;
+  last_month: string;
+  this_month_count: number;
+  this_month_average: string | null;
+  busiest_merchant: DashboardRanked | null;
+  monthly: { month: string; total: string }[];
+  top_merchants: DashboardRanked[];
+  top_products: DashboardRanked[];
+  recent: {
+    id: string;
+    merchant: string;
+    amount: string;
+    currency: string;
+    purchased_at: string;
+  }[];
+};
+
+export function getDashboard(today: string, period: DashboardPeriod) {
+  return apiFetch<Dashboard>(`/dashboard?today=${today}&period=${period}`);
+}
