@@ -8,6 +8,15 @@ import { MeProvider } from "@/lib/me-context";
 
 import ReceiptsPage from "./page";
 
+// A client-side navigation (Link) updates the router's search params before
+// window.location. `navSearch` simulates that; unset, the mock follows
+// window.location like a direct page load.
+let navSearch: string | null = null;
+vi.mock("next/navigation", () => ({
+  useSearchParams: () =>
+    new URLSearchParams(navSearch ?? window.location.search),
+}));
+
 const ME: Me = {
   id: "1",
   email: "jane@example.com",
@@ -58,6 +67,7 @@ const RECEIPT = receipt({});
 beforeEach(() => {
   vi.spyOn(api, "getReceiptImageObjectUrl").mockResolvedValue("blob:fake-url");
   window.history.replaceState(null, "", "/");
+  navSearch = null;
 });
 
 // Uploads a file, then waits for the scan phase to settle so the field
@@ -584,6 +594,17 @@ describe("ReceiptsPage", () => {
 
   it("opens the detail dialog on mount from a ?receipt= URL", async () => {
     window.history.replaceState(null, "", "/?receipt=r1");
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("dialog", { name: "Trader Joe's" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the detail dialog when a client-side navigation sets ?receipt= before window.location", async () => {
+    navSearch = "?receipt=r1";
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
 
     renderPage();

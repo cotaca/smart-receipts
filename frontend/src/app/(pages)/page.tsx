@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -94,7 +95,16 @@ function sortReceipts(
   }
 }
 
+// useSearchParams needs a Suspense boundary or `next build` fails to prerender.
 export default function ReceiptsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReceiptsPageContent />
+    </Suspense>
+  );
+}
+
+function ReceiptsPageContent() {
   const t = useTranslations("ReceiptsPage");
   const { me } = useMe();
   const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
@@ -129,14 +139,13 @@ export default function ReceiptsPage() {
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Read once via a lazy initializer, not via useSearchParams (that would
-  // need a Suspense boundary just for this) and not via setState in an
-  // effect (React flags that as a cascading-render smell). Guarded for SSR,
-  // where `window` doesn't exist yet -- the value only matters client-side.
+  // Initial value only, via useSearchParams rather than window.location: the
+  // dashboard links here with a client-side navigation, and at first render
+  // then window.location is not updated yet (the router's params are). Later
+  // changes are mirrored out by the effect below, never read back in.
+  const searchParams = useSearchParams();
   const [detailId, setDetailId] = useState<string | null>(() =>
-    typeof window === "undefined"
-      ? null
-      : new URLSearchParams(window.location.search).get("receipt"),
+    searchParams.get("receipt"),
   );
 
   useEffect(() => {
