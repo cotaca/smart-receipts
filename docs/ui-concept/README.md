@@ -37,11 +37,11 @@ Redirecting…"). Theme-Toggle als Text-Button im Footer.
 → vollständig mit vorhandenen Primitives baubar.
 
 ### `Screen-Dashboard` — Auswertungen (geplant, Backend fehlt)
-Sidebar*, Avatar, DropdownMenu (Account), Card (3 KPI-Tiles: Monatsausgaben,
+Sidebar, Avatar, DropdownMenu (Account), Card (3 KPI-Tiles: Monatsausgaben,
 Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart* (Spend
-per month, Recharts), Progress* (Top-Merchant-Balken), Table (Most-bought
-products), Separator, Badge*, Select (Zeitraum „Last 12 months"). Mobile: Bottom-Nav
-als eigenes Layout + Sheet* für das Menü.
+per month, Recharts), Progress (Top-Merchant-Balken), Table (Most-bought
+products), Separator, Badge, Select (Zeitraum „Last 12 months"). Mobile: Bottom-Nav
+als eigenes Layout + Sheet für das Menü.
 Hinweis im Mockup: „Most-bought products — needs line items" — die `ReceiptItem`-Tabelle
 ist inzwischen gebaut (siehe `.claude/rules/backend/receipts-api.md`), diese Auswertung
 selbst (Dashboard-Backend) fehlt weiterhin.
@@ -53,20 +53,20 @@ receipts yet" + „Upload your first receipt").
 → am nächsten am aktuellen Stand; vollständig mit vorhandenen Primitives baubar.
 
 ### `Screen-ReceiptsDesktop` — Liste im Zielzustand
-Sidebar*, Breadcrumb*, InputGroup (Suche), Popover* + Calendar* (Datumsbereich),
-Popover* (Betragsbereich), Select (Sortierung), Badge* (PDF-Marker in der ersten
+Sidebar, Breadcrumb*, InputGroup (Suche), Popover + Calendar (Datumsbereich),
+Popover (Betragsbereich), Select (Sortierung), Badge (PDF-Marker in der ersten
 Spalte), Table, Pagination*, Alert (Info-Callout zu Filtern), DropdownMenu, Button.
 Filter sollen laut Callout in der URL stehen (teilbar, reload-fest).
 
 ### `Screen-ReceiptsMobile` — Liste am Handy
-Sheet* (Filter-Drawer von unten **und** Navigations-Drawer von links), Badge*
+Sheet (Filter-Drawer von unten **und** Navigations-Drawer von links), Badge
 (aktive Filter als Chips), ToggleGroup* (Month / Quarter / Year / Custom), Input,
 Label, Button, Separator, DropdownMenu. Bottom-Nav + Gruppenkopf („September 2026 ·
 248.55 EUR") als eigenes Layout.
 
 ### `Screen-UploadInline` — Upload-Dialog (Weiterentwicklung des heutigen)
 Dialog, Label, Input, Select (Currency), Textarea (Notes), Button, Spinner,
-Badge* („Suggested" / „Confirmed" pro Feld), Progress* („Reading your receipt… 2 of
+Badge („Suggested" / „Confirmed" pro Feld), Progress („Reading your receipt… 2 of
 3"), Alert (drei Varianten: Scan läuft, „2 fields suggested from the scan", „Nothing
 readable in this scan" + Retry).
 Kernidee, die zur bestehenden Implementierung passt: Vorschläge überschreiben nie,
@@ -74,35 +74,37 @@ was der Nutzer selbst getippt hat („You can start typing — anything you fill
 yourself is never overwritten").
 
 ### `Screen-UploadReview` — Upload-Dialog, zweispaltig
-Dialog (breit: Vorschau links, Felder rechts), Alert, Badge*, Progress*, Skeleton
+Dialog (breit: Vorschau links, Felder rechts), Alert, Badge, Progress, Skeleton
 (Felder während des Scans), Input, Label, Select, Textarea, Button, Spinner.
-Enthält den PDF-Zweig: „1 page · 84 KB · text layer found, no OCR needed" — deckt
-sich mit dem „Future: PDF upload"-Plan in `ARCHITECTURE.md`.
+Enthält den PDF-Zweig: „1 page · 84 KB · text layer found, no OCR needed" — der
+PDF-Upload ist gebaut, dieser PDF-spezifische Review-Text noch nicht (siehe
+`.claude/rules/frontend/receipt-dialog.md`).
 
 ### `Screen-Detail` — Beleg-Detailansicht
-Dialog, Badge* (Bild/PDF), Button, DropdownMenu, Separator, Card, Table
+Dialog, Badge (Bild/PDF), Button, DropdownMenu, Separator, Card, Table
 (Line-Items: Description / Qty / Unit / Total). PDF-Variante zeigt statt der
-Bildvorschau eine Datei-Kachel mit „Open PDF" / „Download" — genau der Fallback, den
-`ARCHITECTURE.md` für `receipt-image.tsx` skizziert.
+Bildvorschau eine Datei-Kachel mit „Open PDF" / „Download". Gebaut ist stattdessen
+ein eingebetteter PDF-Viewer plus „Download"; das Bild/PDF-Badge fehlt noch (siehe
+`.claude/rules/frontend/receipt-dialog.md`).
 
 ### `Screen-Delete` — Löschbestätigung
 AlertDialog, Button (destructive), Spinner, plus eine kleine Beleg-Vorschauzeile im
 Dialog (Thumbnail, Händler, „2026-09-14 · 42,18 EUR").
 → vollständig mit vorhandenen Primitives baubar.
 
-### `Screen-Settings` — Kontoeinstellungen (geplant, Backend fehlt)
-Sidebar*, Card (Abschnitte Appearance / Amounts / Account), ToggleGroup* (Theme
+### `Screen-Settings` — Kontoeinstellungen (gebaut)
+Sidebar, Card (Abschnitte Appearance / Amounts / Account), ToggleGroup* (Theme
 Light/Dark/System, Zahlenformat `1.234,56` vs `1,234.56`), Select (Sprache,
 Default-Währung), Separator, Button, Alert, Label.
-Deckt exakt die vier geplanten Settings ab (Theme, Sprache, Zahlenformat,
+Deckt exakt die vier Settings ab (Theme, Sprache, Zahlenformat,
 Default-Währung) und stellt klar: „These settings live on your account, not in this
 browser."
 
 ## Sammel-Liste der fehlenden Primitives
 
 ```
-npx shadcn@latest add badge sidebar breadcrumb pagination popover calendar sheet toggle-group progress chart
+npx shadcn@latest add breadcrumb pagination toggle-group chart
 ```
 
-Nur das dazunehmen, was der gerade gebaute Screen wirklich braucht — `sidebar`,
-`chart` und `calendar` ziehen jeweils spürbar Code bzw. Dependencies nach.
+Nur das dazunehmen, was der gerade gebaute Screen wirklich braucht — `chart` zieht
+spürbar Code und Recharts als Dependency nach.
