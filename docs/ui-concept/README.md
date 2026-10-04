@@ -16,7 +16,7 @@ gzip/base64-Blob-Zeile im Bundle) und diese Datei nachziehen.
 ## Design-Vorgaben des Exports
 
 - Nur shadcn/ui-Patterns, keine eigenen Widgets für etwas, das ein Primitive abdeckt
-- Nur die Tokens aus `frontend/src/app/globals.css` (Purple-Theme, hell + dunkel).
+- Nur die Tokens aus `frontend/src/app/globals.css` (neutrale Grautöne für Flächen und Text, Lila als Akzent; hell + dunkel).
   Die Mockups nutzen durchgehend `var(--background)`, `--card`, `--popover`,
   `--muted-foreground`, `--border`, `--destructive` — kein hartkodiertes Hex
 - Schriften: Inter (Sans) + Geist Mono (Beträge, Datumsangaben, IDs) — beide bereits
