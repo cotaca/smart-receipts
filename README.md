@@ -2,7 +2,7 @@
 
 Web app for digitally tracking and analyzing expenses via receipt scans.
 
-> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth, receipt CRUD, OCR-assisted data entry and account settings are implemented end to end, backend and frontend.
+> **Work in progress.** This is an early-stage side project, not a usable product yet. JWT auth, receipt CRUD, OCR-assisted data entry, the dashboard and account settings are implemented end to end, backend and frontend.
 
 ## What works today
 
@@ -18,7 +18,7 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 
 ## Tech Stack
 
-- **Frontend:** Next.js (TypeScript) + TailwindCSS + shadcn/ui
+- **Frontend:** Next.js (TypeScript) + TailwindCSS + shadcn/ui, Recharts for the dashboard chart
 - **Backend:** FastAPI (Python 3.14, managed with [uv](https://docs.astral.sh/uv/))
 - **Database:** PostgreSQL 18, SQLModel, Alembic migrations
 - **Storage:** Swappable backend (local disk in dev, S3/Supabase later) behind a small `Protocol`
@@ -106,7 +106,8 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
     /app         /login, plus the (pages) route group — a Next.js route group, so it
                  adds no URL segment: / (receipts), /dashboard, /settings. Everything
                  in it shares one sidebar shell and one auth guard
-    /components  /ui = shadcn-generated, /receipts = receipt feature, /layout = sidebar shell
+    /components  /ui = shadcn-generated, /receipts = receipt feature, /dashboard = spend chart,
+                 /layout = sidebar shell
     /hooks       useTheme (light/dark/system), useAuthGuard, useIsMobile
     /lib         api.ts (fetch wrapper + API calls), me-context.tsx (current user),
                  utils.ts (cn, formatAmount)
@@ -116,7 +117,7 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
     /models      SQLModel table models
     /routers     API endpoints
     /schemas     Non-table Pydantic schemas
-    /services    storage.py (storage backend), image_processing.py, ocr.py
+    /services    storage.py (storage backend), image_processing.py, pdf.py, ocr.py
   /alembic     DB migrations
   /tests       pytest suite
   Dockerfile   Backend image (Python 3.14 + Tesseract), used by docker-compose.yml
