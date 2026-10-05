@@ -13,6 +13,7 @@ import {
   Sun01Icon,
 } from "@hugeicons/core-free-icons";
 
+import { LogoMark } from "@/components/logo-mark";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -65,12 +66,7 @@ export function AppSidebar({ me }: { me: Me }) {
   return (
     <Sidebar>
       <SidebarHeader className="h-13 flex-row items-center gap-2 border-b border-border px-3.5">
-        <div className="flex size-6 items-center justify-center rounded-md bg-primary">
-          <HugeiconsIcon
-            icon={Invoice01Icon}
-            className="text-primary-foreground"
-          />
-        </div>
+        <LogoMark className="size-6" />
         <span className="text-sm font-semibold tracking-tight text-foreground">
           SmartReceipts
         </span>

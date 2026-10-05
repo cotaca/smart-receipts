@@ -11,9 +11,9 @@ import {
   ViewOffIcon,
   AlertCircleIcon,
   CheckmarkCircle02Icon,
-  Invoice01Icon,
 } from "@hugeicons/core-free-icons";
 
+import { LogoMark } from "@/components/logo-mark";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,12 +81,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen w-full items-center justify-center bg-muted p-6">
       <div className="flex w-full max-w-sm flex-col gap-5">
         <div className="flex flex-col items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary">
-            <HugeiconsIcon
-              icon={Invoice01Icon}
-              className="text-primary-foreground"
-            />
-          </div>
+          <LogoMark className="size-9" />
           <div className="text-sm font-semibold tracking-tight text-foreground">
             SmartReceipts
           </div>

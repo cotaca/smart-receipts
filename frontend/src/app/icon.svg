@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Logo direction A, 16-unit drawing (docs/ui-concept/screens/Logo-Mark.html).
+       Hex values are the primary token (light, dark) from globals.css: a favicon can't
+       read CSS variables. No double hyphen in here, it makes the XML invalid. -->
+  <style>
+    path { fill: #4f2b69; }
+    @media (prefers-color-scheme: dark) { path { fill: #ba96d4; } }
+  </style>
+  <path fill-rule="evenodd" shape-rendering="crispEdges" d="M4 1H12A2 2 0 0 1 14 3V12L12 14L10 12L8 14L6 12L4 14L2 12V3A2 2 0 0 1 4 1ZM5 4H11V6H5ZM5 8H9V10H5Z"/>
+</svg>
