@@ -1,13 +1,15 @@
 import json
 
+import pytest
 from sqlmodel import select
 
+from backend.core.security import hash_password
 from backend.models.receipt import Receipt, ReceiptItem
 from backend.models.user import User
 from tests.images import make_image_bytes
 
 EMAIL = "user@test.com"
-PASSWORD = "very-secure-password"
+PASSWORD = "Very-secure-pass1"
 RECEIPT_BYTES = make_image_bytes()
 
 
@@ -222,13 +224,13 @@ async def test_change_password_succeeds_and_new_password_logs_in(client):
 
     response = await client.post(
         "/auth/change-password",
-        json={"current_password": PASSWORD, "new_password": "new-secure-password"},
+        json={"current_password": PASSWORD, "new_password": "New-secure-pass2"},
         headers=headers,
     )
     assert response.status_code == 204
 
     login_response = await client.post(
-        "/auth/login", json={"email": EMAIL, "password": "new-secure-password"}
+        "/auth/login", json={"email": EMAIL, "password": "New-secure-pass2"}
     )
     assert login_response.status_code == 200
 
@@ -243,7 +245,7 @@ async def test_change_password_wrong_current_password_returns_400(client):
 
     response = await client.post(
         "/auth/change-password",
-        json={"current_password": "wrong-password", "new_password": "whatever123"},
+        json={"current_password": "wrong-password", "new_password": "Whatever-123"},
         headers=headers,
     )
 
@@ -253,7 +255,7 @@ async def test_change_password_wrong_current_password_returns_400(client):
 async def test_change_password_without_token_returns_401(client):
     response = await client.post(
         "/auth/change-password",
-        json={"current_password": PASSWORD, "new_password": "whatever123"},
+        json={"current_password": PASSWORD, "new_password": "Whatever-123"},
     )
 
     assert response.status_code == 401
@@ -437,3 +439,89 @@ async def test_delete_account_succeeds_even_if_storage_delete_raises(
         "/auth/login", json={"email": EMAIL, "password": PASSWORD}
     )
     assert login_response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "password",
+    [
+        "Ab1-xyz",  # too short
+        "kassenbon-2026",  # no uppercase
+        "KASSENBON-2026",  # no lowercase
+        "Kassenbon-xyz",  # no digit
+        "Kassenbon2026",  # no special character
+    ],
+)
+async def test_register_rejects_password_missing_a_rule(client, password):
+    response = await _register(client, password=password)
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "password",
+    [
+        "Kassenbon-2026",
+        "Äpfel-und-1",  # Ä counts as uppercase
+        "Kassenbon 2026",  # space is a special character
+        "Kassenbon€2026",
+    ],
+)
+async def test_register_accepts_password_meeting_all_rules(client, password):
+    response = await _register(client, password=password)
+
+    assert response.status_code == 201
+
+
+async def test_change_password_rejects_weak_new_password(client):
+    headers = await _auth_headers(client)
+
+    response = await client.post(
+        "/auth/change-password",
+        headers=headers,
+        json={"current_password": PASSWORD, "new_password": "weakpass"},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_login_still_works_with_old_weak_password(client, db_session):
+    db_session.add(User(email=EMAIL, hashed_password=hash_password("hunter22")))
+    db_session.commit()
+
+    response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": "hunter22"}
+    )
+
+    assert response.status_code == 200
+
+
+async def _weak_headers(client, db_session) -> dict[str, str]:
+    # Created before the policy existed: only login-style paths may accept it.
+    db_session.add(User(email=EMAIL, hashed_password=hash_password("hunter22")))
+    db_session.commit()
+    response = await client.post(
+        "/auth/login", json={"email": EMAIL, "password": "hunter22"}
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+async def test_old_weak_password_works_as_current_password(client, db_session):
+    headers = await _weak_headers(client, db_session)
+
+    response = await client.post(
+        "/auth/change-password",
+        headers=headers,
+        json={"current_password": "hunter22", "new_password": "New-secure-pass2"},
+    )
+
+    assert response.status_code == 204
+
+
+async def test_old_weak_password_can_delete_account(client, db_session):
+    headers = await _weak_headers(client, db_session)
+
+    response = await client.request(
+        "DELETE", "/auth/me", headers=headers, json={"password": "hunter22"}
+    )
+
+    assert response.status_code == 204

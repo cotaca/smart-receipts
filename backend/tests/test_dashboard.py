@@ -7,9 +7,7 @@ RECEIPT_BYTES = make_image_bytes()
 TODAY = "2026-03-15"
 
 
-async def _register_and_auth(
-    client, email: str, password: str = "very-secure-password"
-):
+async def _register_and_auth(client, email: str, password: str = "Very-secure-pass1"):
     response = await client.post(
         "/auth/register", json={"email": email, "password": password}
     )

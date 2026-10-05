@@ -1,3 +1,4 @@
+import unicodedata
 import uuid
 from datetime import datetime
 from typing import Annotated, Literal
@@ -9,6 +10,7 @@ Currency = Literal["EUR", "USD", "GBP", "CHF"]
 Language = Literal["de", "en"]
 
 BCRYPT_MAX_BYTES = 72
+MIN_PASSWORD_LENGTH = 8
 
 
 def _within_bcrypt_limit(password: str) -> str:
@@ -24,11 +26,40 @@ def _within_bcrypt_limit(password: str) -> str:
     return password
 
 
+def _meets_password_policy(password: str) -> str:
+    r"""Require length plus an upper, lower, digit and special character.
+
+    Classes follow Unicode general categories so they match the JS regexes in
+    frontend/src/lib/password.ts (\p{Lu}, \p{Ll}, \p{N}, [^\p{L}\p{N}]).
+    Keep the two in sync.
+    """
+    categories = [unicodedata.category(c) for c in password]
+    missing = [
+        rule
+        for rule, ok in {
+            f"at least {MIN_PASSWORD_LENGTH} characters": len(password)
+            >= MIN_PASSWORD_LENGTH,
+            "an uppercase letter": "Lu" in categories,
+            "a lowercase letter": "Ll" in categories,
+            "a number": any(c[0] == "N" for c in categories),
+            "a special character": any(c[0] not in "LN" for c in categories),
+        }.items()
+        if not ok
+    ]
+    if missing:
+        raise ValueError("Password needs " + ", ".join(missing))
+    return password
+
+
 # Only applied where a password is *set*. Login and the current-password check
 # must keep accepting longer input: accounts created before this limit existed
 # have one, and rejecting it outright would lock them out instead of letting
-# bcrypt compare the 72 bytes it actually stored.
-NewPassword = Annotated[str, AfterValidator(_within_bcrypt_limit)]
+# bcrypt compare the 72 bytes it actually stored. The same goes for the
+# password policy: it is likewise skipped on login, current_password and
+# account deletion, so older weak passwords keep working.
+NewPassword = Annotated[
+    str, AfterValidator(_within_bcrypt_limit), AfterValidator(_meets_password_policy)
+]
 
 
 class RegisterRequest(BaseModel):

@@ -13,9 +13,7 @@ from tests.images import make_image_bytes, make_multipage_pdf_bytes, make_pdf_by
 RECEIPT_BYTES = make_image_bytes()
 
 
-async def _register_and_auth(
-    client, email: str, password: str = "very-secure-password"
-):
+async def _register_and_auth(client, email: str, password: str = "Very-secure-pass1"):
     response = await client.post(
         "/auth/register", json={"email": email, "password": password}
     )
