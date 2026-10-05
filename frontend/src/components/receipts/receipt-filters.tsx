@@ -1,5 +1,6 @@
-"use client";
-
+// No "use client": only (pages)/page.tsx imports this, and that is already the
+// client boundary. With the directive, Next flags the function props
+// (onChange, countFor) as non-serializable for a server→client boundary.
 import { useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { de, enUS } from "date-fns/locale";
@@ -729,7 +730,7 @@ export function ReceiptFilters({
             </Button>
             <Button
               size="touch"
-              className="flex-[2]"
+              className="flex-2"
               disabled={!draftApplied}
               onClick={() => {
                 if (!draftApplied) return;
