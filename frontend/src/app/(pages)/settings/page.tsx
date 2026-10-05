@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 
+import { PasswordRules } from "@/components/password-rules";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ import {
   ApiError,
   changePassword,
   deleteAccount,
+  hasErrorLoc,
   setAccessToken,
   updateMe,
   type Currency,
@@ -56,6 +58,7 @@ import {
 } from "@/lib/api";
 import { syncLocaleCookie } from "@/lib/locale";
 import { useMe } from "@/lib/me-context";
+import { isValidPassword } from "@/lib/password";
 import { formatAmount } from "@/lib/utils";
 
 const CURRENCIES: { code: Currency; labelKey: string }[] = [
@@ -315,12 +318,31 @@ function ChangePasswordForm({
   const t = useTranslations("SettingsPage");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [repeat, setRepeat] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const currentMissing = submitted && currentPassword === "";
+  const passwordInvalid = submitted && !isValidPassword(newPassword);
+  const mismatch = submitted && repeat !== newPassword;
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
+    setSubmitted(true);
+    const firstInvalid =
+      currentPassword === ""
+        ? "current-password"
+        : !isValidPassword(newPassword)
+          ? "new-password"
+          : repeat !== newPassword
+            ? "repeat-new-password"
+            : null;
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
     setIsSubmitting(true);
     setError("");
 
@@ -330,10 +352,13 @@ function ChangePasswordForm({
     } catch (err) {
       // 400 means "wrong current password" (see routers/auth.py) -- any
       // other status is an unrelated failure.
+      // 422 = the server's password policy disagrees with the client's.
       setError(
         err instanceof ApiError && err.status === 400
           ? t("wrongCurrentPassword")
-          : t("genericError"),
+          : hasErrorLoc(err, "new_password")
+            ? t("errorPasswordRules")
+            : t("genericError"),
       );
     } finally {
       setIsSubmitting(false);
@@ -347,7 +372,11 @@ function ChangePasswordForm({
         <DialogDescription>{t("changePasswordDescription")}</DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="flex flex-col gap-3.5"
+      >
         {error && (
           <Alert variant="destructive">
             <HugeiconsIcon icon={AlertCircleIcon} />
@@ -362,8 +391,25 @@ function ChangePasswordForm({
             type="password"
             required
             value={currentPassword}
+            autoComplete="current-password"
             onChange={(e) => setCurrentPassword(e.target.value)}
+            aria-invalid={currentMissing}
+            aria-describedby={
+              currentMissing ? "current-password-msg" : undefined
+            }
           />
+          {currentMissing && (
+            <div
+              id="current-password-msg"
+              className="flex items-start gap-1.5 text-xs text-destructive"
+            >
+              <HugeiconsIcon
+                icon={AlertCircleIcon}
+                className="mt-px size-3.5 flex-none"
+              />
+              <span>{t("currentPasswordRequired")}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -373,8 +419,44 @@ function ChangePasswordForm({
             type="password"
             required
             value={newPassword}
+            autoComplete="new-password"
             onChange={(e) => setNewPassword(e.target.value)}
+            aria-invalid={passwordInvalid}
+            aria-describedby="new-password-rules"
           />
+          <PasswordRules
+            id="new-password-rules"
+            password={newPassword}
+            submitted={submitted}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="repeat-new-password">
+            {t("repeatNewPasswordLabel")}
+          </Label>
+          <Input
+            id="repeat-new-password"
+            type="password"
+            required
+            autoComplete="new-password"
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value)}
+            aria-invalid={mismatch}
+            aria-describedby={mismatch ? "repeat-new-password-msg" : undefined}
+          />
+          {mismatch && (
+            <div
+              id="repeat-new-password-msg"
+              className="flex items-start gap-1.5 text-xs text-destructive"
+            >
+              <HugeiconsIcon
+                icon={AlertCircleIcon}
+                className="mt-px size-3.5 flex-none"
+              />
+              <span>{t("passwordMismatch")}</span>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, apiFetch, login, setAccessToken, updateMe } from "@/lib/api";
+import {
+  ApiError,
+  apiFetch,
+  hasErrorLoc,
+  login,
+  setAccessToken,
+  updateMe,
+} from "@/lib/api";
 
 function json(status: number, body: unknown = {}) {
   return new Response(JSON.stringify(body), { status });
@@ -88,5 +95,22 @@ describe("apiFetch token refresh", () => {
     await expect(apiFetch("/receipts")).rejects.toBeInstanceOf(ApiError);
     // Original request + failed refresh, no retry.
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("ApiError detail", () => {
+  it("carries FastAPI's detail and tolerates a non-JSON error body", async () => {
+    const detail = [{ loc: ["body", "email"], msg: "bad" }];
+    stubFetch(() => json(422, { detail }));
+    const err = await apiFetch("/x").catch((e) => e);
+    expect(err).toMatchObject({ status: 422, detail });
+    expect(hasErrorLoc(err, "email")).toBe(true);
+    expect(hasErrorLoc(err, "password")).toBe(false);
+
+    stubFetch(() => new Response("oops", { status: 500 }));
+    await expect(apiFetch("/x")).rejects.toMatchObject({
+      status: 500,
+      detail: undefined,
+    });
   });
 });

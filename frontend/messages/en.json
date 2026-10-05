@@ -10,13 +10,11 @@
     "accountCreated": "Account created",
     "redirecting": "Redirecting you to your receipts…",
     "errorInvalidCredentials": "Invalid email or password",
-    "errorEmailRegistered": "Email already registered",
     "errorGeneric": "Something went wrong. Please try again.",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "••••••••",
-    "togglePasswordVisibility": "Toggle password visibility",
     "submitLogin": "Log in",
     "submitLoginLoading": "Signing in…",
     "submitRegister": "Create account",
@@ -26,7 +24,14 @@
     "linkSignUp": "Sign up",
     "linkLogIn": "Log in",
     "switchToLight": "Switch to light",
-    "switchToDark": "Switch to dark"
+    "switchToDark": "Switch to dark",
+    "repeatPasswordLabel": "Repeat password",
+    "passwordMismatch": "Passwords don't match.",
+    "emailInvalid": "Enter an email address like name@example.com.",
+    "emailTaken": "An account with this email already exists.",
+    "logInInstead": "Log in instead",
+    "togglePasswordVisibility": "Show/Hide password",
+    "errorPasswordRules": "This password doesn't meet the rules."
   },
   "AppShell": {
     "toggleSidebar": "Toggle sidebar"
@@ -130,7 +135,11 @@
     "deleteAccountDescription": "This permanently deletes your account, all receipts and their files. This cannot be undone.",
     "deleteAccountConfirmLabel": "Enter your password to confirm",
     "wrongPassword": "Password is incorrect.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "repeatNewPasswordLabel": "Repeat new password",
+    "passwordMismatch": "Passwords don't match.",
+    "errorPasswordRules": "This password doesn't meet the rules.",
+    "currentPasswordRequired": "Enter your current password."
   },
   "ReceiptFormDialog": {
     "editTitle": "Edit receipt",
@@ -224,5 +233,15 @@
     "chooseYear": "Choose year",
     "previousYears": "Previous years",
     "nextYears": "Next years"
+  },
+  "PasswordRules": {
+    "length": "At least {min} characters",
+    "upper": "An uppercase letter",
+    "lower": "A lowercase letter",
+    "digit": "A number",
+    "special": "A special character (e.g. ! ? €)",
+    "tooLong": "Use at most {max} characters. Letters like ä count as two.",
+    "met": "(met)",
+    "unmet": "(not met)"
   }
 }

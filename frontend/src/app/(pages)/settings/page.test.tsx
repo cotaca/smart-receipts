@@ -115,7 +115,11 @@ describe("SettingsPage", () => {
     );
     await user.type(
       within(dialog).getByLabelText("New password"),
-      "new-password123",
+      "New-password-123",
+    );
+    await user.type(
+      within(dialog).getByLabelText("Repeat new password"),
+      "New-password-123",
     );
     await user.click(
       within(dialog).getByRole("button", { name: "Change password" }),
@@ -127,6 +131,98 @@ describe("SettingsPage", () => {
       ).toBeInTheDocument(),
     );
     expect(dialog).toBeInTheDocument();
+  });
+
+  it("requires the current password before sending anything", async () => {
+    const spy = vi.spyOn(api, "changePassword").mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+    const dialog = screen.getByRole("dialog");
+    await user.type(
+      within(dialog).getByLabelText("New password"),
+      "New-password-123",
+    );
+    await user.type(
+      within(dialog).getByLabelText("Repeat new password"),
+      "New-password-123",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Change password" }),
+    );
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(within(dialog).getByLabelText("Current password")).toHaveFocus();
+    expect(
+      within(dialog).getByText("Enter your current password."),
+    ).toBeInTheDocument();
+  });
+
+  it("maps a 422 from the server to the policy message", async () => {
+    vi.spyOn(api, "changePassword").mockRejectedValue(
+      new api.ApiError(422, "422", [{ loc: ["body", "new_password"] }]),
+    );
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+    const dialog = screen.getByRole("dialog");
+    await user.type(within(dialog).getByLabelText("Current password"), "old");
+    await user.type(
+      within(dialog).getByLabelText("New password"),
+      "New-password-123",
+    );
+    await user.type(
+      within(dialog).getByLabelText("Repeat new password"),
+      "New-password-123",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Change password" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByText("This password doesn't meet the rules."),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("does not call changePassword for a weak password or a mismatch", async () => {
+    const spy = vi.spyOn(api, "changePassword").mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+    const dialog = screen.getByRole("dialog");
+    const submit = within(dialog).getByRole("button", {
+      name: "Change password",
+    });
+    await user.type(
+      within(dialog).getByLabelText("Current password"),
+      "old-password",
+    );
+
+    await user.type(within(dialog).getByLabelText("New password"), "weak");
+    await user.click(submit);
+    expect(spy).not.toHaveBeenCalled();
+    expect(within(dialog).getByLabelText("New password")).toHaveFocus();
+
+    await user.clear(within(dialog).getByLabelText("New password"));
+    await user.type(
+      within(dialog).getByLabelText("New password"),
+      "New-password-123",
+    );
+    await user.type(
+      within(dialog).getByLabelText("Repeat new password"),
+      "Other-password-123",
+    );
+    await user.click(submit);
+    expect(spy).not.toHaveBeenCalled();
+    expect(
+      within(dialog).getByText("Passwords don't match."),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Repeat new password")).toHaveFocus();
   });
 
   it("shows an inline error when the delete-account password is wrong", async () => {

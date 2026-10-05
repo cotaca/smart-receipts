@@ -66,7 +66,8 @@ Button-Variante `size="touch"`), Display-Größen 36–58 px, FAQ als natives
 - **`Screen-Register`** (`state` empty/typing/invalid/toolong/taken/loading/generic, `mobile`) —
   Inline-Validierung für „Create account": Passwort-Hinweis vor dem Tippen, E-Mail
   on blur, 72-Byte-Limit clientseitig, 409 am E-Mail-Feld mit „Log in instead".
-  Mindestlänge 8: entschieden, siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05) Nr. 4.
+  **Gebaut** (`login/page.tsx`): statt der einen Hinweiszeile eine Regel-Checkliste
+  (8 Zeichen, Groß-, Kleinbuchstabe, Ziffer, Sonderzeichen), dazu „Repeat password".
 - Die neuen EN/DE-Strings, Verhalten und Abweichungen listet das Board im Review-Block von 03.
 
 ### Weitere v2-Dateien
@@ -88,17 +89,14 @@ die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
    der EN/DE-Schalter setzt nur den Cookie.
 3. **`/impressum` und `/datenschutz` als einfache Server-Seiten mit Platzhaltern.** Den
    Text liefert der Betreiber; die Landing geht erst live, wenn er drin ist.
-4. **Passwort mindestens 8 Zeichen**, in `NewPassword` (Registrierung und
-   Passwortwechsel). Login bleibt ungeprüft, ältere kurze Passwörter funktionieren weiter.
+4. *(gebaut: Passwortregeln in `NewPassword`, siehe `.claude/rules/backend/auth.md`)*
 5. **Bottom-Nav statt Sidebar-Sheet unter `md`**, wie im Board (Dashboard, Receipts,
    Upload, Settings; Konto per Avatar-Menü in der Top-Bar). Ersetzt beim Bau die
    Shell-Regel in `.claude/rules/frontend/shell-auth.md`.
 6. **Listenfilter in der URL** via `replaceState`, gleiches Muster wie `?receipt=` (beim
    Start lesen, danach nur schreiben). Filtern bleibt clientseitig. Ersetzt beim Bau
    „keine Query-Params" in `.claude/rules/frontend/receipts-list.md`.
-7. **`size="touch"`-Variante** (44 px unter 640 px) in `button.tsx` und `input.tsx`, nicht
-   als Inline-Klassen. Wie `Alert variant="warning"` nach jedem shadcn-Regenerieren
-   wieder ergänzen.
+7. *(gebaut: `size="touch"`, siehe `.claude/rules/frontend/ui.md`)*
 8. **FAQ als natives `details/summary`**, kein Accordion.
 ## Design-Vorgaben des Exports
 

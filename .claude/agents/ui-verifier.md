@@ -15,7 +15,7 @@ You verify concrete UI checks against the running dev app. You never change sour
 
 Setup:
 - The app must already run: frontend on http://localhost:3000, API on http://localhost:8000/health. Check both with `curl -sf`. If either is down, stop and report exactly that — don't start servers yourself.
-- Log in by registering a throwaway account on /login (`ui-verify+<unix-timestamp>@example.test`, a 12+ character password). Never use or ask for real credentials.
+- Log in by registering a throwaway account on /login (`ui-verify+<unix-timestamp>@example.com` (the backend rejects reserved `.test` domains), a 12+ character password that meets the rules (upper, lower, digit, special character, e.g. `Verify-2026-ok!`)). Never use or ask for real credentials.
 - If a check needs a receipt, create a test image with `cd backend && uv run python -c "from PIL import Image; Image.new('RGB',(600,1200),'white').save('/tmp/receipt.png')"` and upload it through the UI.
 
 For each check you're given (route, viewport, action, expected result):

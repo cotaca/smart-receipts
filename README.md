@@ -6,7 +6,7 @@ Web app for digitally tracking and analyzing expenses via receipt scans.
 
 ## What works today
 
-- **Accounts** — register, login, logout, refresh, delete account (with your receipts and images, password re-entry required). Access token in memory, refresh token in an httpOnly cookie.
+- **Accounts** — register, login, logout, refresh, delete account (with your receipts and images, password re-entry required). New passwords need 8+ characters with an upper- and lowercase letter, a digit and a special character. Access token in memory, refresh token in an httpOnly cookie.
 - **Receipts** — upload an image or PDF, edit, delete, list. Images are served through an authenticated route, never a public file mount, and you only ever see your own.
 - **Image preprocessing** — every image upload is auto-rotated by its EXIF orientation, capped at 2000px on the longest edge and re-encoded to JPEG. HEIC from iPhones is accepted and converted. All metadata is stripped, so the GPS coordinates in a phone photo never reach storage.
 - **PDF e-receipts** — a PDF eBon is stored unchanged. Its text layer is read directly when there is one; a scanned PDF with no text layer falls back to the same OCR pipeline as a photo.

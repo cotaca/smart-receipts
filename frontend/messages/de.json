@@ -10,13 +10,11 @@
     "accountCreated": "Konto erstellt",
     "redirecting": "Weiterleitung zu den Belegen…",
     "errorInvalidCredentials": "E-Mail oder Passwort ungültig",
-    "errorEmailRegistered": "E-Mail-Adresse bereits registriert",
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "emailLabel": "E-Mail",
     "emailPlaceholder": "name@beispiel.de",
     "passwordLabel": "Passwort",
     "passwordPlaceholder": "••••••••",
-    "togglePasswordVisibility": "Passwort anzeigen/verbergen",
     "submitLogin": "Anmelden",
     "submitLoginLoading": "Anmeldung läuft…",
     "submitRegister": "Konto erstellen",
@@ -26,7 +24,14 @@
     "linkSignUp": "Registrieren",
     "linkLogIn": "Anmelden",
     "switchToLight": "Zu Hell wechseln",
-    "switchToDark": "Zu Dunkel wechseln"
+    "switchToDark": "Zu Dunkel wechseln",
+    "repeatPasswordLabel": "Passwort wiederholen",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "emailInvalid": "Gib eine E-Mail-Adresse wie name@beispiel.de ein.",
+    "emailTaken": "Mit dieser E-Mail-Adresse gibt es bereits ein Konto.",
+    "logInInstead": "Stattdessen anmelden",
+    "togglePasswordVisibility": "Passwort anzeigen/verbergen",
+    "errorPasswordRules": "Dieses Passwort erfüllt die Regeln nicht."
   },
   "AppShell": {
     "toggleSidebar": "Seitenleiste ein-/ausblenden"
@@ -130,7 +135,11 @@
     "deleteAccountDescription": "Dies löscht dein Konto sowie alle Belege und deren Dateien endgültig. Das kann nicht rückgängig gemacht werden.",
     "deleteAccountConfirmLabel": "Gib dein Passwort ein, um zu bestätigen",
     "wrongPassword": "Das Passwort ist falsch.",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "repeatNewPasswordLabel": "Neues Passwort wiederholen",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "errorPasswordRules": "Dieses Passwort erfüllt die Regeln nicht.",
+    "currentPasswordRequired": "Gib dein aktuelles Passwort ein."
   },
   "ReceiptFormDialog": {
     "editTitle": "Beleg bearbeiten",
@@ -224,5 +233,15 @@
     "chooseYear": "Jahr wählen",
     "previousYears": "Frühere Jahre",
     "nextYears": "Spätere Jahre"
+  },
+  "PasswordRules": {
+    "length": "Mindestens {min} Zeichen",
+    "upper": "Ein Großbuchstabe",
+    "lower": "Ein Kleinbuchstabe",
+    "digit": "Eine Zahl",
+    "special": "Ein Sonderzeichen (z. B. ! ? €)",
+    "tooLong": "Höchstens {max} Zeichen. Buchstaben wie ä zählen doppelt.",
+    "met": "(erfüllt)",
+    "unmet": "(nicht erfüllt)"
   }
 }

@@ -8,10 +8,32 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    // FastAPI's `detail` (a list of {loc, msg, ...} on a 422), when parseable.
+    public detail?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+async function errorFrom(response: Response) {
+  const detail = await response
+    .json()
+    .then((body) => (body as { detail?: unknown }).detail)
+    .catch(() => undefined);
+  return new ApiError(
+    response.status,
+    `${response.status} ${response.statusText}`,
+    detail,
+  );
+}
+
+// True if a 422 names `field` in any detail entry's `loc` (e.g. "email").
+export function hasErrorLoc(err: unknown, field: string): boolean {
+  if (!(err instanceof ApiError) || !Array.isArray(err.detail)) return false;
+  return err.detail.some(
+    (d) => Array.isArray(d?.loc) && (d.loc as unknown[]).includes(field),
+  );
 }
 
 // Access token lives in memory only (not localStorage)
@@ -97,10 +119,7 @@ export async function apiFetch<T>(
   );
 
   if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      `${response.status} ${response.statusText}`,
-    );
+    throw await errorFrom(response);
   }
 
   if (response.status === 204) {
@@ -117,10 +136,7 @@ export async function apiFetchBlob(path: string): Promise<Blob> {
   const response = await authedFetch(path);
 
   if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      `${response.status} ${response.statusText}`,
-    );
+    throw await errorFrom(response);
   }
 
   return response.blob();
