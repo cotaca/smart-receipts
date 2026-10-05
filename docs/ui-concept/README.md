@@ -7,11 +7,114 @@ bevor ein Screen von Hand gebaut wird.
 
 | Datei | Zweck |
 |---|---|
-| `SmartReceipts UI Spec Board.html` | Der gerenderte Export (Single-File-Bundle, React + Fonts inline). **Das ist die Datei zum Anschauen** — im Browser öffnen. |
-| `screens/Screen-*.html` | Die 10 Einzel-Screens, aus dem Bundle entpackt. Lesbares HTML mit Inline-Styles — Quelle für Layout, Copy und Zustände. Rendern **nicht** standalone (referenzieren ein `./support.js`, das nur im Bundle existiert). |
+| `SmartReceipts UI Spec Board.html` | Aktuelles Board (v2, Stand 2026-10-05): Logo, Landing-Page, Phase-3-App-Screens. Single-File-Bundle — **im Browser öffnen**. |
+| `SmartReceipts UI Spec Board v1.html` | Erstes Board (2026-09) mit den 10 Ursprungs-Screens. Für die v1-Screens unten. |
+| `screens/*.html` | Aus den Bundles entpackt. Lesbares HTML — Quelle für Layout, Copy und Zustände. Rendern **nicht** standalone (`./support.js` und der DS-Bundle existieren nur im Bundle). v2-Dateien nutzen die DS-Komponenten direkt (`component-from-global-scope="SmartReceipts.Button"` usw.), ihre Zustände stehen in `data-props`. |
 
 Beim Re-Export: Bundle ersetzen, dann `screens/` neu entpacken (Manifest-Zeile +
-gzip/base64-Blob-Zeile im Bundle) und diese Datei nachziehen.
+gzip/base64-Blob-Zeile im Bundle; `.dc.html`-Einträge sind die Screens, die
+Landing-Page ist ein verschachteltes Bundle mit eigenem Manifest) und diese Datei nachziehen.
+
+## Stand: Design vs. Code (2026-10-05)
+
+| Bereich | Design | Code |
+|---|---|---|
+| Logo | v2 01, final | nicht gebaut — überall noch die `Invoice01Icon`-Kachel, Next-Default-`favicon.ico` |
+| Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Offene Fragen](#offene-fragen)) |
+| Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | Suche nur Händler; Zeitraum + Sortierung, keine URL-Parameter |
+| Mobile Bottom-Nav | v2 03, im Review | Sidebar als Offcanvas-Sheet |
+| Registrierung mit Inline-Validierung | v2 03, im Review | Fehler nur vom Server, oben als Alert |
+| Dashboard | v2-Datei = gebauter Stand | gebaut |
+| Upload-/Bearbeiten-Dialog | v2 `Screen-ReceiptForm` = gebauter Stand | gebaut |
+| Login, Detail, Löschen, Settings | v1 | gebaut |
+
+### Was v2 an schon gebauten Screens ändert
+- **Logo-Mark statt Invoice-Kachel**: Sidebar-Header (`app-sidebar.tsx`) und
+  Login-Karte (`login/page.tsx`). `Invoice01Icon` bleibt als Nav-Icon „Receipts" und im
+  Empty-State der Liste — das Board ersetzt nur die Marken-Kachel.
+- **Bottom-Nav unter `md`** betrifft jede App-Seite (Dashboard, Settings, Liste), nicht
+  nur die Liste: `app-shell.tsx` blendet Sidebar und `SidebarTrigger` unten aus, Konto
+  (Theme, Sign out) wandert in ein Avatar-Menü in der Top-Bar.
+- **Login-Seite**: Tab „Create account" bekommt die Phase-3-Validierung und soll per
+  `?tab=register` direkt öffnen (Ziel der Landing-CTAs).
+- **Favicon/Meta**: `favicon.svg`, `apple-touch-icon.png` (180), `og-image.png`
+  (1200×630) und der Meta-Block aus Board 2c. In `frontend/public/` liegen nur die
+  ungenutzten Next-Scaffolding-SVGs.
+
+## v2 — aktuelles Board
+
+### 01 Logo — `screens/Logo-Mark.html` (final)
+Richtung **A** („Torn Edge": Bon mit Zackenrand, Knock-out-Zeilen) überall —
+Favicon 16/32/180, Sidebar-Lockup (24 px Mark + „SmartReceipts" Inter 600) ersetzt die
+Invoice-Icon-Kachel. Landing-Hero nutzt Bs Thermobon-Optik mit A-Mark. Nur Tokens.
+SVG-Dateien stecken inline in `Logo-Mark.html` (Props `dir`, `v`, `tone`, `size`).
+
+### 02 Landing-Page — `screens/Landing-Page.html` (2a freigegeben)
+Öffentliche Seite, mobile-first, EN/DE (informelles „du"), hell/dunkel. Header,
+Hero, „So funktioniert's", fünf Features, Privacy, Produktvorschau (Laptop mit
+`Screen-Dashboard`, Handy mit `Screen-ReceiptForm`), FAQ, CTA-Band, Footer
+(Impressum/Datenschutz verlinkt, Seiten selbst out of scope). Keine Zahlen,
+Testimonials, Preise. Meta-Block + og:image 1200×630 stehen im Board (2c).
+Abweichungen laut Board: 44-px-Touch-Targets unter 640 px (vorgeschlagen:
+Button-Variante `size="touch"`), Display-Größen 36–58 px, FAQ als natives
+`details/summary` (kein Accordion im DS), CTA-Band auf `--primary`.
+
+### 03 Phase 3 — App-Screens (offen zum Review)
+- **`Screen-ReceiptsList`** (`chrome` desktop/mobile, `state` default/filtered/popover/search/nomatch/sheet) —
+  löst `Screen-ReceiptsDesktop`/`-Mobile` (v1) ab. Suche über Händler, Positionen und
+  Notizen; Zeitraum inkl. „Custom range…" (DatePicker); Betrag min/max; Dateityp
+  (Fotos/PDFs); aktive Filter als Chips + „Clear all"; Monatsgruppen mit Summe; Filter
+  per `replaceState` in der URL. Mobile: Bottom-Nav (Dashboard, Receipts, Upload,
+  Settings) ersetzt unter `md` den Sidebar-Trigger, Filter im Bottom-Sheet, Tabs statt
+  ToggleGroup.
+- **`Screen-Register`** (`state` empty/typing/invalid/toolong/taken/loading/generic, `mobile`) —
+  Inline-Validierung für „Create account": Passwort-Hinweis vor dem Tippen, E-Mail
+  on blur, 72-Byte-Limit clientseitig, 409 am E-Mail-Feld mit „Log in instead".
+  Mindestlänge 8: siehe [Offene Fragen](#offene-fragen) Nr. 4.
+- Die neuen EN/DE-Strings, Verhalten und Abweichungen listet das Board im Review-Block von 03.
+
+### Weitere v2-Dateien
+- `Screen-Dashboard` — ersetzt die v1-Datei; DS-Version des gebauten Dashboards (`chrome`, `state` filled/empty/loading/error).
+- `Screen-ReceiptForm` — DS-Version des gebauten Upload-Dialogs (`state` empty/scanning/review/lowquality/pdf/edit), im Board nur als Landing-Vorschau.
+
+## Offene Fragen
+
+Entscheidungen, bevor v2 gebaut wird. Jeweils mit Empfehlung und Preis.
+
+1. **Route der Landing-Page.** `/` ist heute die Belegliste hinter dem Auth-Guard
+   (`(pages)/page.tsx`), Landing und App kollidieren. *Empfehlung:* Landing auf `/`,
+   Liste nach `/receipts`. *Preis:* Sidebar-Links, Dashboard-Links (`/?receipt=`) und
+   Redirects nach Login ändern sich. Alternative `/welcome` lässt die App unberührt, ist
+   aber die schlechtere Einstiegs-URL.
+2. **Landing serverseitig rendern.** Alle App-Seiten sind Client-Komponenten; Meta-Block
+   und og:image brauchen eine Server-Komponente mit `metadata`. *Empfehlung:* Landing als
+   eigene Route außerhalb von `(pages)`, ohne Auth-Guard. Sprache ohne Konto kommt schon
+   heute aus Locale-Cookie bzw. `Accept-Language` (`src/i18n/request.ts`); der EN/DE-Schalter
+   muss nur den Cookie setzen.
+3. **Impressum und Datenschutz.** Board: verlinkt, Seiten out of scope. Eine öffentliche
+   Seite in DE braucht beide. *Empfehlung:* vor dem Livegang der Landing anlegen,
+   Inhalt liefert der Betreiber.
+4. **Passwort-Mindestlänge 8.** Heute prüft `NewPassword` nur das 72-Byte-Maximum.
+   *Empfehlung:* ja, in `NewPassword` — gilt dann für Registrierung und
+   Passwortwechsel; Login bleibt ungeprüft, alte kurze Passwörter kommen weiter rein.
+   *Preis:* kleine Backend-Änderung + Tests. Ohne sie lautet der Hinweis „at most 72".
+5. **Bottom-Nav statt Sidebar-Sheet unter `md`.** Kehrt die Entscheidung in
+   `.claude/rules/frontend/shell-auth.md` um (genau ein `SidebarTrigger`, Konto nur im
+   Sidebar-Footer). *Empfehlung:* übernehmen — Upload ist am Handy der Haupt-Use-Case.
+   *Preis:* neue `MobileNav`, Konto-Menü doppelt (Sidebar + Top-Bar), Safe-Area-Padding.
+6. **Filter in der URL.** Kehrt „keine Query-Params" in
+   `.claude/rules/frontend/receipts-list.md` um. *Empfehlung:* übernehmen, gleiches
+   Muster wie `?receipt=` (`replaceState`, nur beim Start lesen). Filtern bleibt
+   clientseitig.
+7. **44-px-Touch-Targets.** Board schlägt eine Variante `size="touch"` für Button/Input
+   vor. *Empfehlung:* Variante in `button.tsx`/`input.tsx` statt Inline-Overrides an
+   jeder Stelle; wie `Alert variant="warning"` nach jedem Regenerieren wieder ergänzen.
+8. **FAQ: Accordion oder `details/summary`.** *Empfehlung:* `details/summary` lassen —
+   zugänglich, kein JS, kein neues Primitive.
+9. **Logo-Assets.** Board-Notiz: Hero-Belegtext vor SVG-Export in Pfade wandeln.
+   *Empfehlung:* SVGs aus Claude Design exportieren und hier ablegen, statt sie aus
+   `Logo-Mark.html` abzuschreiben; dann `favicon.ico` und die Next-SVGs in `public/`
+   ersetzen.
 
 ## Design-Vorgaben des Exports
 
@@ -24,7 +127,10 @@ gzip/base64-Blob-Zeile im Bundle) und diese Datei nachziehen.
 - Custom Tailwind nur für Layout (Flex/Grid, Spacing)
 - Mobile-first: Upload passiert am Handy, Desktop ist der Analyse-Kontext
 
-## Screens und ihre shadcn-Komponenten
+## v1 — Ursprungs-Screens und ihre shadcn-Komponenten
+
+Stand des ersten Boards (`SmartReceipts UI Spec Board v1.html`). Wo v2 eine Datei
+ersetzt oder ablöst, steht es dabei.
 
 `*` = noch nicht in `frontend/src/components/ui/`, muss per
 `npx shadcn@latest add <name>` dazu.
@@ -36,7 +142,7 @@ Feld, Passwort-Auge als Suffix), Input, Button, Spinner (Submit), Alert
 Redirecting…"). Theme-Toggle als Text-Button im Footer.
 → vollständig mit vorhandenen Primitives baubar.
 
-### `Screen-Dashboard` — Auswertungen (gebaut)
+### `Screen-Dashboard` — Auswertungen (gebaut; Datei jetzt v2)
 Sidebar, Avatar, DropdownMenu (Account), Card (3 KPI-Tiles: Monatsausgaben,
 Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart (Spend
 per month, Recharts), Progress (Top-Merchant-Balken), Table (Most-bought
@@ -51,13 +157,13 @@ Table, DropdownMenu (Row-Actions), Avatar, Skeleton (Ladezustand), Empty („No
 receipts yet" + „Upload your first receipt").
 → am nächsten am aktuellen Stand; vollständig mit vorhandenen Primitives baubar.
 
-### `Screen-ReceiptsDesktop` — Liste im Zielzustand
+### `Screen-ReceiptsDesktop` — Liste im Zielzustand (abgelöst durch v2 `Screen-ReceiptsList`)
 Sidebar, Breadcrumb*, InputGroup (Suche), Popover + Calendar (Datumsbereich),
 Popover (Betragsbereich), Select (Sortierung), Badge (PDF-Marker in der ersten
 Spalte), Table, Pagination*, Alert (Info-Callout zu Filtern), DropdownMenu, Button.
 Filter sollen laut Callout in der URL stehen (teilbar, reload-fest).
 
-### `Screen-ReceiptsMobile` — Liste am Handy
+### `Screen-ReceiptsMobile` — Liste am Handy (abgelöst durch v2 `Screen-ReceiptsList`)
 Sheet (Filter-Drawer von unten **und** Navigations-Drawer von links), Badge
 (aktive Filter als Chips), ToggleGroup* (Month / Quarter / Year / Custom), Input,
 Label, Button, Separator, DropdownMenu. Bottom-Nav + Gruppenkopf („September 2026 ·
@@ -102,8 +208,12 @@ browser."
 ## Sammel-Liste der fehlenden Primitives
 
 ```
-npx shadcn@latest add breadcrumb pagination toggle-group
+npx shadcn@latest add toggle-group accordion
 ```
+
+`toggle-group` war für v1 vorgesehen; v2 nutzt stattdessen Tabs. `accordion` schlägt
+das Board für das Landing-FAQ vor (bis dahin `details/summary`). `breadcrumb` und
+`pagination` brauchte nur das abgelöste `Screen-ReceiptsDesktop`.
 
 Nur das dazunehmen, was der gerade gebaute Screen wirklich braucht — jedes Primitive
 zieht Code und teils Dependencies nach.
