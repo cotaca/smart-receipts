@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>:root{--font-geist-mono:"Geist Mono",ui-monospace,monospace}body{margin:0}a{color:inherit}a:hover{color:var(--primary)}</style>
+<script src="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/_ds_bundle.js"></script>
+</helmet>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div class="flex w-full items-center justify-center bg-muted p-6 font-sans text-xs text-foreground" style="min-height:100%;box-sizing:border-box">
+  <div class="flex w-full max-w-sm flex-col gap-5">
+    <div class="flex flex-col items-center gap-2">
+      <dc-import name="Logo-Mark" dir="A" v="m24" size="36" hint-size="36px,36px"></dc-import>
+      <div class="text-sm font-semibold tracking-tight text-foreground">SmartReceipts</div>
+    </div>
+
+    <x-import component-from-global-scope="SmartReceipts.Card">
+      <x-import component-from-global-scope="SmartReceipts.CardContent" class-name="flex flex-col gap-4">
+        <x-import component-from-global-scope="SmartReceipts.Tabs" default-value="register">
+          <x-import component-from-global-scope="SmartReceipts.TabsList" class-name="w-full" style="height:{{ h }}">
+            <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="login">Log in</x-import>
+            <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="register">Create account</x-import>
+          </x-import>
+        </x-import>
+
+        <form class="flex flex-col gap-3.5" novalidate="">
+          <sc-if value="{{ generic }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="SmartReceipts.Alert" variant="destructive">
+              <div class="flex items-start gap-1.5" style="grid-column:1/-1">
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.AlertCircleIcon }}" class-name="mt-0.5 size-3.5 flex-none"></x-import>
+                <x-import component-from-global-scope="SmartReceipts.AlertDescription">Something went wrong. Please try again.</x-import>
+              </div>
+            </x-import>
+          </sc-if>
+
+          <div class="flex flex-col gap-1.5">
+            <x-import component-from-global-scope="SmartReceipts.Label" html-for="r-email">Email</x-import>
+            <x-import component-from-global-scope="SmartReceipts.InputGroup" style="height:{{ h }}">
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Mail01Icon }}"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupInput" id="r-email" type="email" autocomplete="email" placeholder="you@example.com" default-value="{{ email }}" aria-invalid="{{ emailInvalid }}" aria-describedby="r-email-msg"></x-import>
+              <sc-if value="{{ emailOk }}" hint-placeholder-val="{{ false }}">
+                <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Tick02Icon }}" aria-label="Valid"></x-import></x-import>
+              </sc-if>
+            </x-import>
+            <sc-if value="{{ emailErr }}" hint-placeholder-val="{{ false }}">
+              <div id="r-email-msg" class="flex items-start gap-1.5 text-destructive">
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.AlertCircleIcon }}" class-name="mt-px size-3.5 flex-none"></x-import>
+                <span>{{ emailErr }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ taken }}" hint-placeholder-val="{{ false }}">
+              <div id="r-email-msg" class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-destructive">
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.AlertCircleIcon }}" class-name="size-3.5 flex-none"></x-import>
+                <span>An account with this email already exists.</span>
+                <x-import component-from-global-scope="SmartReceipts.Button" variant="link" size="xs" class-name="h-auto p-0 text-foreground">Log in instead</x-import>
+              </div>
+            </sc-if>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <x-import component-from-global-scope="SmartReceipts.Label" html-for="r-password">Password</x-import>
+            <x-import component-from-global-scope="SmartReceipts.InputGroup" style="height:{{ h }}">
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.LockPasswordIcon }}"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupInput" id="r-password" type="{{ pwType }}" autocomplete="new-password" placeholder="••••••••" default-value="{{ password }}" aria-invalid="{{ pwInvalid }}" aria-describedby="r-pw-msg"></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end">
+                <x-import component-from-global-scope="SmartReceipts.InputGroupButton" size="icon-xs" aria-label="{{ pwToggleLabel }}" aria-pressed="{{ pwShown }}"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ pwIcon }}"></x-import></x-import>
+              </x-import>
+            </x-import>
+            <div id="r-pw-msg" aria-live="polite" class="flex items-start gap-1.5 {{ pwMsgCls }}">
+              <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ pwMsgIcon }}" class-name="mt-px size-3.5 flex-none"></x-import>
+              <span>{{ pwMsg }}</span>
+            </div>
+          </div>
+
+          <x-import component-from-global-scope="SmartReceipts.Button" type="submit" class-name="w-full" disabled="{{ isLoading }}" style="height:{{ h }}">
+            <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="SmartReceipts.Spinner"></x-import></sc-if>
+            {{ submitLabel }}
+          </x-import>
+          <div class="text-center text-xs text-muted-foreground">
+            Already have an account?
+            <x-import component-from-global-scope="SmartReceipts.Button" variant="link" size="xs" class-name="h-auto p-0 text-foreground">Log in</x-import>
+          </div>
+        </form>
+      </x-import>
+    </x-import>
+
+    <div class="flex justify-center">
+      <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="sm">Switch to dark</x-import>
+    </div>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:560},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;typing&quot;,&quot;invalid&quot;,&quot;toolong&quot;,&quot;taken&quot;,&quot;loading&quot;,&quot;generic&quot;],&quot;default&quot;:&quot;empty&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    if (!window.SmartReceipts) this._t = setInterval(() => { if (window.SmartReceipts) { clearInterval(this._t); this.forceUpdate(); } }, 50);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  renderVals() {
+    const S = window.SmartReceipts || {};
+    const st = this.props.state ?? "empty";
+    const mobile = !!this.props.mobile;
+    const V = {
+      empty:   { email: "", password: "", pw: "hint" },
+      typing:  { email: "anna@web.de", password: "receipts2026", pw: "ok", emailOk: true, shown: true },
+      invalid: { email: "anna@web", password: "hunt", pw: "short", emailErr: "Enter an email address like name@example.com." },
+      toolong: { email: "anna@web.de", password: "Kassenbon-Kassenbon-Kassenbon-Kassenbon-Kassenbon-Kassenbon-Kassenbon-Kassenbon", pw: "long", emailOk: true, shown: true },
+      taken:   { email: "anna@web.de", password: "receipts2026", pw: "ok", taken: true },
+      loading: { email: "anna@web.de", password: "receipts2026", pw: "ok", emailOk: true, loading: true },
+      generic: { email: "anna@web.de", password: "receipts2026", pw: "ok", emailOk: true, generic: true },
+    }[st] || {};
+    const pwMsgs = {
+      hint:  { t: "Use 8 to 72 characters.", cls: "text-muted-foreground", icon: S.InformationCircleIcon },
+      ok:    { t: "Use 8 to 72 characters.", cls: "text-muted-foreground", icon: S.Tick02Icon },
+      short: { t: "Use at least 8 characters. 4 so far.", cls: "text-destructive", icon: S.AlertCircleIcon },
+      long:  { t: "Use at most 72 characters. Letters like ä count as two.", cls: "text-destructive", icon: S.AlertCircleIcon },
+    };
+    const m = pwMsgs[V.pw];
+    return {
+      ready: !!window.SmartReceipts,
+      ic: S,
+      h: mobile ? "44px" : "",
+      email: V.email,
+      password: V.password,
+      emailErr: V.emailErr || "",
+      emailInvalid: !!(V.emailErr || V.taken),
+      emailOk: !!V.emailOk,
+      taken: !!V.taken,
+      generic: !!V.generic,
+      pwInvalid: V.pw === "short" || V.pw === "long",
+      pwShown: !!V.shown,
+      pwType: V.shown ? "text" : "password",
+      pwIcon: V.shown ? S.ViewOffIcon : S.ViewIcon,
+      pwToggleLabel: V.shown ? "Hide password" : "Show password",
+      pwMsg: m.t, pwMsgCls: m.cls, pwMsgIcon: m.icon,
+      isLoading: !!V.loading,
+      submitLabel: V.loading ? "Creating account…" : "Create account",
+    };
+  }
+}
+</script>
+</body>
+</html>

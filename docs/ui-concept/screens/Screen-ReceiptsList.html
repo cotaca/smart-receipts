@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>:root{--font-geist-mono:"Geist Mono",ui-monospace,monospace}body{margin:0}a{color:inherit}a:hover{color:var(--primary)}</style>
+<script src="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/_ds_bundle.js"></script>
+</helmet>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+
+<sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<div class="relative flex bg-background font-sans text-xs text-foreground" style="min-height:100%;height:100%">
+  <x-import component-from-global-scope="SmartReceipts.SidebarProvider" class-name="min-h-0">
+    <x-import component-from-global-scope="SmartReceipts.Sidebar" collapsible="none" class-name="border-r border-border">
+      <x-import component-from-global-scope="SmartReceipts.SidebarHeader" class-name="h-13 flex-row items-center gap-2 border-b border-border px-3.5">
+        <dc-import name="Logo-Mark" dir="A" v="m24" size="24" hint-size="24px,24px"></dc-import>
+        <span class="text-sm font-semibold tracking-tight text-foreground">SmartReceipts</span>
+      </x-import>
+      <x-import component-from-global-scope="SmartReceipts.SidebarContent">
+        <x-import component-from-global-scope="SmartReceipts.SidebarGroup">
+          <x-import component-from-global-scope="SmartReceipts.SidebarGroupLabel">Workspace</x-import>
+          <x-import component-from-global-scope="SmartReceipts.SidebarGroupContent">
+            <x-import component-from-global-scope="SmartReceipts.SidebarMenu">
+              <sc-for list="{{ nav }}" as="item" hint-placeholder-count="3">
+                <x-import component-from-global-scope="SmartReceipts.SidebarMenuItem">
+                  <x-import component-from-global-scope="SmartReceipts.SidebarMenuButton" is-active="{{ item.active }}">
+                    <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ item.icon }}"></x-import>
+                    <span>{{ item.label }}</span>
+                  </x-import>
+                </x-import>
+              </sc-for>
+            </x-import>
+          </x-import>
+        </x-import>
+      </x-import>
+      <x-import component-from-global-scope="SmartReceipts.SidebarFooter" class-name="border-t border-border">
+        <x-import component-from-global-scope="SmartReceipts.SidebarMenuButton" size="lg">
+          <x-import component-from-global-scope="SmartReceipts.Avatar" size="sm"><x-import component-from-global-scope="SmartReceipts.AvatarFallback">AN</x-import></x-import>
+          <span class="flex-1 truncate text-xs text-foreground">anna@web.de</span>
+        </x-import>
+      </x-import>
+    </x-import>
+    <x-import component-from-global-scope="SmartReceipts.SidebarInset">
+      <main class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-8 py-7">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-col gap-0.5">
+            <h1 class="text-lg font-semibold tracking-tight text-foreground">Receipts</h1>
+            <p class="text-xs text-muted-foreground">128 receipts · <span class="font-mono">3.412,80 EUR</span> tracked</p>
+          </div>
+          <x-import component-from-global-scope="SmartReceipts.Button" size="lg">
+            <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Upload04Icon }}" data-icon="inline-start"></x-import>
+            Upload receipt
+          </x-import>
+        </div>
+
+        <div class="relative flex flex-col gap-2 rounded-lg border border-border bg-muted p-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <x-import component-from-global-scope="SmartReceipts.InputGroup" class-name="max-w-65 flex-1">
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Search01Icon }}"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupInput" placeholder="Search merchants, items, notes…" aria-label="Search receipts" default-value="{{ q }}"></x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.Select" items="{{ periods }}" default-value="{{ period }}">
+              <x-import component-from-global-scope="SmartReceipts.SelectTrigger" size="sm" aria-label="Period"><x-import component-from-global-scope="SmartReceipts.SelectValue"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.SelectContent" class-name="w-auto min-w-(--anchor-width)">
+                <sc-for list="{{ periods }}" as="o" hint-placeholder-count="5"><x-import component-from-global-scope="SmartReceipts.SelectItem" value="{{ o.value }}">{{ o.label }}</x-import></sc-for>
+              </x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.Button" variant="outline" size="sm" aria-expanded="{{ popover }}">
+              <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Money01Icon }}" data-icon="inline-start"></x-import>
+              <span>{{ amountLabel }}</span>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.Select" items="{{ types }}" default-value="all">
+              <x-import component-from-global-scope="SmartReceipts.SelectTrigger" size="sm" aria-label="File type"><x-import component-from-global-scope="SmartReceipts.SelectValue"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.SelectContent" class-name="w-auto min-w-(--anchor-width)">
+                <sc-for list="{{ types }}" as="o" hint-placeholder-count="3"><x-import component-from-global-scope="SmartReceipts.SelectItem" value="{{ o.value }}">{{ o.label }}</x-import></sc-for>
+              </x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.Select" items="{{ sorts }}" default-value="newest">
+              <x-import component-from-global-scope="SmartReceipts.SelectTrigger" size="sm" class-name="ml-auto" aria-label="Sort order"><x-import component-from-global-scope="SmartReceipts.SelectValue"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.SelectContent" class-name="w-auto min-w-(--anchor-width)">
+                <sc-for list="{{ sorts }}" as="o" hint-placeholder-count="4"><x-import component-from-global-scope="SmartReceipts.SelectItem" value="{{ o.value }}">{{ o.label }}</x-import></sc-for>
+              </x-import>
+            </x-import>
+          </div>
+          <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ true }}">
+            <div class="flex flex-wrap items-center gap-1.5 border-t border-border pt-2">
+              <span class="text-muted-foreground">Active filters</span>
+              <sc-for list="{{ chips }}" as="c" hint-placeholder-count="2">
+                <x-import component-from-global-scope="SmartReceipts.Button" variant="secondary" size="xs" class-name="rounded-full" aria-label="{{ c.aria }}">
+                  <span>{{ c.label }}</span>
+                  <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Cancel01Icon }}" data-icon="inline-end"></x-import>
+                </x-import>
+              </sc-for>
+              <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="xs">Clear all</x-import>
+              <span class="ml-auto text-muted-foreground" aria-live="polite">{{ resultPre }}<span class="font-mono text-foreground">{{ resultSum }}</span></span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ popover }}" hint-placeholder-val="{{ false }}">
+            <div class="absolute z-10 flex flex-col gap-3 rounded-lg bg-popover p-3 text-popover-foreground ring-1 ring-foreground/10" style="top:46px;left:420px;width:260px" role="dialog" aria-label="Amount range">
+              <div class="text-sm font-medium text-foreground">Amount</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="flex flex-col gap-1.5">
+                  <x-import component-from-global-scope="SmartReceipts.Label" html-for="amin">Min</x-import>
+                  <x-import component-from-global-scope="SmartReceipts.InputGroup">
+                    <x-import component-from-global-scope="SmartReceipts.InputGroupInput" id="amin" inputmode="decimal" class-name="font-mono" default-value="10,00"></x-import>
+                    <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end"><span class="font-mono">EUR</span></x-import>
+                  </x-import>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <x-import component-from-global-scope="SmartReceipts.Label" html-for="amax">Max</x-import>
+                  <x-import component-from-global-scope="SmartReceipts.InputGroup">
+                    <x-import component-from-global-scope="SmartReceipts.InputGroupInput" id="amax" inputmode="decimal" class-name="font-mono" default-value="50,00"></x-import>
+                    <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end"><span class="font-mono">EUR</span></x-import>
+                  </x-import>
+                </div>
+              </div>
+              <p class="m-0 text-muted-foreground">Leave a field empty for no limit. Receipts in other currencies are hidden while this filter is on.</p>
+              <div class="flex justify-end gap-2">
+                <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="sm">Reset</x-import>
+                <x-import component-from-global-scope="SmartReceipts.Button" size="sm">Apply</x-import>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ isNoMatch }}" hint-placeholder-val="{{ false }}">
+          <x-import component-from-global-scope="SmartReceipts.Empty" class-name="border border-dashed border-border bg-muted">
+            <x-import component-from-global-scope="SmartReceipts.EmptyHeader">
+              <x-import component-from-global-scope="SmartReceipts.EmptyMedia" variant="icon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.FilterHorizontalIcon }}"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.EmptyTitle">No receipts match your filters</x-import>
+              <x-import component-from-global-scope="SmartReceipts.EmptyDescription">Nothing for “lidl” in this month. Try a longer period or clear the filters.</x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.EmptyContent">
+              <x-import component-from-global-scope="SmartReceipts.Button" variant="outline">Clear filters</x-import>
+            </x-import>
+          </x-import>
+        </sc-if>
+
+        <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+          <x-import component-from-global-scope="SmartReceipts.Table">
+            <x-import component-from-global-scope="SmartReceipts.TableHeader">
+              <x-import component-from-global-scope="SmartReceipts.TableRow">
+                <x-import component-from-global-scope="SmartReceipts.TableHead" class-name="w-14"><span class="sr-only">Preview</span></x-import>
+                <x-import component-from-global-scope="SmartReceipts.TableHead">Merchant</x-import>
+                <x-import component-from-global-scope="SmartReceipts.TableHead">Date</x-import>
+                <x-import component-from-global-scope="SmartReceipts.TableHead" class-name="text-right">Amount</x-import>
+              </x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.TableBody">
+              <sc-for list="{{ lines }}" as="l" hint-placeholder-count="7">
+                <sc-if value="{{ l.isHead }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="SmartReceipts.TableRow" class-name="hover:bg-transparent">
+                    <x-import component-from-global-scope="SmartReceipts.TableCell" col-span="4" class-name="bg-muted/50 py-1.5">
+                      <div class="flex items-center justify-between gap-3 text-[10px] font-medium tracking-wider uppercase text-muted-foreground">
+                        <span>{{ l.month }}</span><span class="font-mono normal-case tracking-normal">{{ l.sum }}</span>
+                      </div>
+                    </x-import>
+                  </x-import>
+                </sc-if>
+                <sc-if value="{{ l.isRow }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="SmartReceipts.TableRow" class-name="cursor-pointer">
+                    <x-import component-from-global-scope="SmartReceipts.TableCell">
+                      <sc-if value="{{ l.pdf }}" hint-placeholder-val="{{ false }}">
+                        <div class="flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Pdf01Icon }}"></x-import></div>
+                      </sc-if>
+                      <sc-if value="{{ l.isImg }}" hint-placeholder-val="{{ true }}">
+                        <img src="{{ l.img }}" alt="" class="size-10 rounded-md object-cover">
+                      </sc-if>
+                    </x-import>
+                    <x-import component-from-global-scope="SmartReceipts.TableCell">
+                      <div class="flex flex-col gap-0.5">
+                        <span class="font-medium">{{ l.merchant }}</span>
+                        <sc-if value="{{ l.match }}" hint-placeholder-val="{{ false }}">
+                          <span class="text-muted-foreground">Line item: <span class="text-foreground">{{ l.match }}</span></span>
+                        </sc-if>
+                      </div>
+                    </x-import>
+                    <x-import component-from-global-scope="SmartReceipts.TableCell" class-name="font-mono text-muted-foreground">{{ l.date }}</x-import>
+                    <x-import component-from-global-scope="SmartReceipts.TableCell" class-name="text-right font-mono">{{ l.amount }}</x-import>
+                  </x-import>
+                </sc-if>
+              </sc-for>
+            </x-import>
+          </x-import>
+        </sc-if>
+      </main>
+    </x-import>
+  </x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+<div class="relative flex flex-col overflow-hidden bg-background font-sans text-xs text-foreground" style="height:100%;min-height:100%">
+  <header class="flex flex-none items-center justify-between gap-2 border-b border-border px-4" style="height:52px">
+    <div class="flex items-center gap-2">
+      <dc-import name="Logo-Mark" dir="A" v="m24" size="24" hint-size="24px,24px"></dc-import>
+      <span class="text-sm font-semibold tracking-tight text-foreground">SmartReceipts</span>
+    </div>
+    <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="icon" aria-label="Account menu" style="width:44px;height:44px">
+      <x-import component-from-global-scope="SmartReceipts.Avatar" size="sm"><x-import component-from-global-scope="SmartReceipts.AvatarFallback">AN</x-import></x-import>
+    </x-import>
+  </header>
+
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div class="flex flex-none flex-col gap-3 px-4 pt-4 pb-3">
+      <div class="flex flex-col gap-0.5">
+        <h1 class="text-lg font-semibold tracking-tight text-foreground">Receipts</h1>
+        <p class="text-xs text-muted-foreground">128 receipts · <span class="font-mono">3.412,80 EUR</span> tracked</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <x-import component-from-global-scope="SmartReceipts.InputGroup" class-name="flex-1" style="height:44px">
+          <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Search01Icon }}"></x-import></x-import>
+          <x-import component-from-global-scope="SmartReceipts.InputGroupInput" placeholder="Search receipts…" aria-label="Search receipts" default-value="{{ q }}" style="font-size:16px"></x-import>
+        </x-import>
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="outline" style="height:44px" aria-label="{{ filterAria }}">
+          <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.FilterHorizontalIcon }}" data-icon="inline-start"></x-import>
+          Filters
+          <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ true }}">
+            <span class="flex size-5 items-center justify-center rounded-full bg-primary font-mono text-[10px] text-primary-foreground">{{ chipCount }}</span>
+          </sc-if>
+        </x-import>
+      </div>
+      <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ true }}">
+        <div class="flex items-center gap-2 overflow-x-auto" style="margin:0 -16px;padding:0 16px">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="2">
+            <x-import component-from-global-scope="SmartReceipts.Button" variant="secondary" class-name="flex-none rounded-full" style="height:36px" aria-label="{{ c.aria }}">
+              <span>{{ c.label }}</span>
+              <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Cancel01Icon }}" data-icon="inline-end"></x-import>
+            </x-import>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-hidden" style="padding-bottom:76px">
+      <sc-for list="{{ lines }}" as="l" hint-placeholder-count="8">
+        <sc-if value="{{ l.isHead }}" hint-placeholder-val="{{ false }}">
+          <div class="flex items-center justify-between gap-3 border-y border-border bg-muted px-4 py-1.5 text-[10px] font-medium tracking-wider uppercase text-muted-foreground">
+            <span>{{ l.month }}</span><span class="font-mono normal-case tracking-normal text-foreground">{{ l.sum }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ l.isRow }}" hint-placeholder-val="{{ true }}">
+          <div class="flex items-center gap-3 border-b border-border px-4" style="min-height:60px">
+            <sc-if value="{{ l.pdf }}" hint-placeholder-val="{{ false }}">
+              <div class="flex size-10 flex-none items-center justify-center rounded-md bg-muted text-muted-foreground"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Pdf01Icon }}"></x-import></div>
+            </sc-if>
+            <sc-if value="{{ l.isImg }}" hint-placeholder-val="{{ true }}">
+              <img src="{{ l.img }}" alt="" class="size-10 flex-none rounded-md object-cover">
+            </sc-if>
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="truncate text-sm font-medium text-foreground">{{ l.merchant }}</span>
+              <span class="font-mono text-muted-foreground">{{ l.date }}</span>
+            </div>
+            <span class="flex-none font-mono text-sm text-foreground">{{ l.amount }}</span>
+          </div>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <nav aria-label="Main" class="absolute inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-background" style="height:68px;padding:0 4px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+      <a href="#" aria-current="{{ t.current }}" class="flex flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium {{ t.cls }}" style="min-height:44px;text-decoration:none">
+        <span class="flex items-center justify-center rounded-md {{ t.iconCls }}" style="width:40px;height:28px">
+          <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ t.icon }}" class-name="size-5"></x-import>
+        </span>
+        <span>{{ t.label }}</span>
+      </a>
+    </sc-for>
+  </nav>
+
+  <sc-if value="{{ sheet }}" hint-placeholder-val="{{ false }}">
+    <div class="absolute inset-0 z-30 bg-black/50"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="sheet-title" class="absolute inset-x-0 bottom-0 z-40 flex flex-col rounded-t-xl bg-popover text-popover-foreground ring-1 ring-foreground/10">
+      <div class="flex justify-center pt-2"><span class="rounded-full bg-muted-foreground/40" style="width:36px;height:4px"></span></div>
+      <div class="flex items-center justify-between gap-2 px-4 pt-1">
+        <h2 id="sheet-title" class="text-sm font-semibold text-foreground">Filters</h2>
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="icon" aria-label="Close filters" style="width:44px;height:44px"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Cancel01Icon }}"></x-import></x-import>
+      </div>
+      <div class="flex flex-col gap-5 px-4 pt-2 pb-4">
+        <div class="flex flex-col gap-2">
+          <div class="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">Period</div>
+          <x-import component-from-global-scope="SmartReceipts.Tabs" default-value="y">
+            <x-import component-from-global-scope="SmartReceipts.TabsList" class-name="w-full" style="height:44px">
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="all">All</x-import>
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="1m">Month</x-import>
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="3m">3 months</x-import>
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="y">Year</x-import>
+            </x-import>
+          </x-import>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">Amount</div>
+          <div class="grid grid-cols-2 gap-2">
+            <x-import component-from-global-scope="SmartReceipts.InputGroup" style="height:44px">
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><span>Min</span></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupInput" inputmode="decimal" aria-label="Minimum amount in EUR" class-name="font-mono" default-value="10,00" style="font-size:16px"></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end"><span class="font-mono">EUR</span></x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.InputGroup" style="height:44px">
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon"><span>Max</span></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupInput" inputmode="decimal" aria-label="Maximum amount in EUR" class-name="font-mono" default-value="50,00" style="font-size:16px"></x-import>
+              <x-import component-from-global-scope="SmartReceipts.InputGroupAddon" align="inline-end"><span class="font-mono">EUR</span></x-import>
+            </x-import>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">File type</div>
+          <x-import component-from-global-scope="SmartReceipts.Tabs" default-value="all">
+            <x-import component-from-global-scope="SmartReceipts.TabsList" class-name="w-full" style="height:44px">
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="all">All</x-import>
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="img">Photos</x-import>
+              <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="pdf">PDFs</x-import>
+            </x-import>
+          </x-import>
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">Sort</div>
+          <x-import component-from-global-scope="SmartReceipts.Select" items="{{ sorts }}" default-value="newest">
+            <x-import component-from-global-scope="SmartReceipts.SelectTrigger" class-name="w-full" style="height:44px" aria-label="Sort order"><x-import component-from-global-scope="SmartReceipts.SelectValue"></x-import></x-import>
+            <x-import component-from-global-scope="SmartReceipts.SelectContent">
+              <sc-for list="{{ sorts }}" as="o" hint-placeholder-count="4"><x-import component-from-global-scope="SmartReceipts.SelectItem" value="{{ o.value }}">{{ o.label }}</x-import></sc-for>
+            </x-import>
+          </x-import>
+        </div>
+      </div>
+      <div class="flex gap-2 border-t border-border px-4 pt-3 pb-5">
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="outline" style="height:44px">Reset</x-import>
+        <x-import component-from-global-scope="SmartReceipts.Button" class-name="flex-1" style="height:44px">Show 7 receipts</x-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:720},&quot;chrome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;filtered&quot;,&quot;popover&quot;,&quot;search&quot;,&quot;nomatch&quot;,&quot;sheet&quot;],&quot;default&quot;:&quot;filtered&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    if (!window.SmartReceipts) this._t = setInterval(() => { if (window.SmartReceipts) { clearInterval(this._t); this.forceUpdate(); } }, 50);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  renderVals() {
+    const S = window.SmartReceipts || {};
+    const chrome = this.props.chrome ?? "desktop";
+    const state = this.props.state ?? "filtered";
+    const fmt = (n) => n.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " EUR";
+    const all = [
+      { merchant: "REWE Markt", date: "2026-09-14", v: 42.18, img: (window.__resources && window.__resources.bonRewe) || "assets/bon_rewe.jpg", items: "Vollmilch 3,5 % 1 l" },
+      { merchant: "Rossmann", date: "2026-09-12", v: 18.47, img: (window.__resources && window.__resources.bonRossmann) || "assets/bon_rossmann.jpg" },
+      { merchant: "EDEKA Center", date: "2026-09-09", v: 63.9, img: (window.__resources && window.__resources.bonEdeka) || "assets/bon_edeka.jpg", items: "Milchreis 500 g" },
+      { merchant: "REWE", date: "2026-09-06", v: 27.35, pdf: true },
+      { merchant: "EDEKA Center", date: "2026-08-28", v: 34.12, img: (window.__resources && window.__resources.bonEdeka) || "assets/bon_edeka.jpg" },
+      { merchant: "REWE City", date: "2026-08-19", v: 12.6, img: (window.__resources && window.__resources.bonReweBad) || "assets/bon_rewe_bad_quality.png", items: "H-Milch 1,5 % 1 l" },
+      { merchant: "Rossmann", date: "2026-08-03", v: 21.05, img: (window.__resources && window.__resources.bonRossmann) || "assets/bon_rossmann.jpg" },
+      { merchant: "REWE", date: "2026-07-16", v: 48.9, pdf: true },
+    ];
+    let rows = all;
+    let q = "";
+    let chips = [];
+    if (state === "filtered" || state === "sheet" || state === "popover") {
+      rows = all.filter((r) => r.v >= 10 && r.v <= 50);
+      chips = [{ label: "This year" }, { label: "10,00–50,00 EUR" }];
+    } else if (state === "search") {
+      q = "milch";
+      rows = all.filter((r) => r.items);
+      chips = [{ label: "“milch”" }];
+    } else if (state === "nomatch") {
+      q = "lidl";
+      rows = [];
+      chips = [{ label: "This month" }, { label: "“lidl”" }];
+    }
+    chips = chips.map((c) => ({ ...c, aria: "Remove filter " + c.label }));
+    const months = { "09": "September 2026", "08": "August 2026", "07": "July 2026" };
+    const lines = [];
+    let cur = null;
+    rows.forEach((r) => {
+      const m = r.date.slice(5, 7);
+      if (m !== cur) {
+        cur = m;
+        const sum = rows.filter((x) => x.date.slice(5, 7) === m).reduce((s, x) => s + x.v, 0);
+        lines.push({ isHead: true, isRow: false, month: months[m], sum: fmt(sum) });
+      }
+      lines.push({ ...r, isHead: false, isRow: true, isImg: !r.pdf, pdf: !!r.pdf, amount: fmt(r.v), match: state === "search" ? r.items : "" });
+    });
+    const total = rows.reduce((s, x) => s + x.v, 0);
+    const navItems = [
+      { key: "dashboard", label: "Dashboard", icon: S.DashboardSquare01Icon },
+      { key: "receipts", label: "Receipts", icon: S.Invoice01Icon },
+      { key: "settings", label: "Settings", icon: S.Settings01Icon },
+    ];
+    const tabs = [
+      { key: "dashboard", label: "Dashboard", icon: S.DashboardSquare01Icon },
+      { key: "receipts", label: "Receipts", icon: S.Invoice01Icon },
+      { key: "upload", label: "Upload", icon: S.Upload04Icon },
+      { key: "settings", label: "Settings", icon: S.Settings01Icon },
+    ].map((t) => {
+      const on = t.key === "receipts";
+      const up = t.key === "upload";
+      return { ...t, current: on ? "page" : undefined,
+        cls: on ? "text-foreground" : up ? "text-foreground" : "text-muted-foreground",
+        iconCls: up ? "bg-primary text-primary-foreground" : on ? "bg-secondary text-secondary-foreground" : "" };
+    });
+    return {
+      ready: !!window.SmartReceipts,
+      ic: S,
+      isDesktop: chrome === "desktop",
+      isMobile: chrome === "mobile",
+      nav: navItems.map((n) => ({ ...n, active: n.key === "receipts" })),
+      tabs,
+      q,
+      chips,
+      chipCount: String(chips.length),
+      hasChips: chips.length > 0,
+      filterAria: chips.length ? "Filters, " + chips.length + " active" : "Filters",
+      lines,
+      hasRows: rows.length > 0,
+      isNoMatch: state === "nomatch",
+      popover: state === "popover",
+      sheet: state === "sheet",
+      period: state === "nomatch" ? "this-month" : chips.length && state !== "search" ? "this-year" : "all",
+      amountLabel: state === "filtered" || state === "popover" ? "10,00–50,00 EUR" : "Amount",
+      resultPre: rows.length + " of 128 receipts · ",
+      resultSum: fmt(total),
+      periods: [
+        { value: "all", label: "All time" },
+        { value: "this-month", label: "This month" },
+        { value: "last-3-months", label: "Last 3 months" },
+        { value: "this-year", label: "This year" },
+        { value: "custom", label: "Custom range…" },
+      ],
+      types: [
+        { value: "all", label: "All files" },
+        { value: "image", label: "Photos" },
+        { value: "pdf", label: "PDFs" },
+      ],
+      sorts: [
+        { value: "newest", label: "Sort: Newest" },
+        { value: "oldest", label: "Sort: Oldest" },
+        { value: "amount-desc", label: "Sort: Amount (high to low)" },
+        { value: "amount-asc", label: "Sort: Amount (low to high)" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ w }}" height="{{ h }}" viewBox="{{ vb }}" role="img" aria-label="SmartReceipts" style="display:block;shape-rendering:{{ sr }}">
+  <sc-if value="{{ inverse }}" hint-placeholder-val="{{ false }}"><rect x="{{ tile.x }}" y="{{ tile.y }}" width="{{ tile.s }}" height="{{ tile.s }}" fill="var(--primary)"></rect></sc-if>
+
+  <sc-if value="{{ aM }}" hint-placeholder-val="{{ false }}">
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M7 2H17A2 2 0 0 1 19 4V19L17.25 22L15.5 19L13.75 22L12 19L10.25 22L8.5 19L6.75 22L5 19V4A2 2 0 0 1 7 2ZM8 6H16V8H8ZM8 10H13V12H8ZM8 14H16V16H8Z"></path>
+  </sc-if>
+  <sc-if value="{{ aS }}" hint-placeholder-val="{{ false }}">
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M4 1H12A2 2 0 0 1 14 3V12L12 14L10 12L8 14L6 12L4 14L2 12V3A2 2 0 0 1 4 1ZM5 4H11V6H5ZM5 8H9V10H5Z"></path>
+  </sc-if>
+  <sc-if value="{{ aD }}" hint-placeholder-val="{{ false }}">
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M14 4H82A6 6 0 0 1 88 10V112L83 120L78 112L73 120L68 112L63 120L58 112L53 120L48 112L43 120L38 112L33 120L28 112L23 120L18 112L13 120L8 112V10A6 6 0 0 1 14 4ZM20 16H52V24H20ZM20 34H50V38H20ZM64 34H76V38H64ZM20 44H42V48H20ZM66 44H76V48H66ZM20 54H56V58H20ZM64 54H76V58H64ZM20 64H46V68H20ZM68 64H76V68H68ZM20 76H24V78H20ZM28 76H32V78H28ZM36 76H40V78H36ZM44 76H48V78H44ZM52 76H56V78H52ZM60 76H64V78H60ZM68 76H72V78H68ZM20 86H44V94H20ZM56 86H76V94H56Z"></path>
+  </sc-if>
+
+  <sc-if value="{{ bM }}" hint-placeholder-val="{{ false }}">
+    <path fill="{{ c.main }}" d="{{ dotsM }}"></path>
+    <path fill="{{ c.rule }}" d="M2 21.25H5V22.75H2ZM7 21.25H10V22.75H7ZM12 21.25H15V22.75H12ZM17 21.25H20V22.75H17Z"></path>
+  </sc-if>
+  <sc-if value="{{ bS }}" hint-placeholder-val="{{ false }}">
+    <path fill="{{ c.main }}" d="{{ pixS }}"></path>
+    <path fill="{{ c.rule }}" d="M1 13H3V15H1ZM5 13H7V15H5ZM9 13H11V15H9ZM13 13H15V15H13Z"></path>
+  </sc-if>
+  <sc-if value="{{ bD }}" hint-placeholder-val="{{ false }}">
+    <path fill="var(--card)" stroke="var(--border)" stroke-width="1" d="M8 8L12 4L16 8L20 4L24 8L28 4L32 8L36 4L40 8L44 4L48 8L52 4L56 8L60 4L64 8L68 4L72 8L76 4L80 8L84 4L88 8V120L84 124L80 120L76 124L72 120L68 124L64 120L60 124L56 120L52 124L48 120L44 124L40 120L36 124L32 120L28 124L24 120L20 124L16 120L12 124L8 120Z"></path>
+    <path fill="{{ c.main }}" d="{{ dotsD }}"></path>
+    <g font-family="Geist Mono, ui-monospace, monospace" font-size="4.6" fill="{{ c.ink }}">
+      <text x="48" y="50" text-anchor="middle" letter-spacing="0.6">SMARTRECEIPTS</text>
+      <text x="48" y="58" text-anchor="middle" fill="{{ c.rule }}" letter-spacing="1.2">****************</text>
+      <text x="16" y="68">REWE MARKT</text><text x="80" y="68" text-anchor="end">2026-09-14</text>
+      <text x="16" y="77">Vollmilch ........</text><text x="80" y="77" text-anchor="end">1,19</text>
+      <text x="16" y="84">Bananen ..........</text><text x="80" y="84" text-anchor="end">2,09</text>
+      <text x="16" y="91">Kaffee Crema .....</text><text x="80" y="91" text-anchor="end">6,99</text>
+      <text x="80" y="99" text-anchor="end" fill="{{ c.rule }}">- - - - - - - - - - - -</text>
+      <text x="16" y="109" font-weight="500">TOTAL</text><text x="80" y="109" text-anchor="end" font-weight="500">10,27 EUR</text>
+    </g>
+  </sc-if>
+  <sc-if value="{{ lD }}" hint-placeholder-val="{{ false }}">
+    <path fill="var(--card)" stroke="var(--border)" stroke-width="1" d="M8 8L12 4L16 8L20 4L24 8L28 4L32 8L36 4L40 8L44 4L48 8L52 4L56 8L60 4L64 8L68 4L72 8L76 4L80 8L84 4L88 8V120L84 124L80 120L76 124L72 120L68 124L64 120L60 124L56 120L52 124L48 120L44 124L40 120L36 124L32 120L28 124L24 120L20 124L16 120L12 124L8 120Z"></path>
+    <path transform="translate(33 9) scale(1.25)" fill-rule="evenodd" fill="{{ c.main }}" d="M7 2H17A2 2 0 0 1 19 4V19L17.25 22L15.5 19L13.75 22L12 19L10.25 22L8.5 19L6.75 22L5 19V4A2 2 0 0 1 7 2ZM8 6H16V8H8ZM8 10H13V12H8ZM8 14H16V16H8Z"></path>
+    <g font-family="Geist Mono, ui-monospace, monospace" font-size="4.6" fill="{{ c.ink }}">
+      <text x="48" y="50" text-anchor="middle" letter-spacing="0.6">SMARTRECEIPTS</text>
+      <text x="48" y="58" text-anchor="middle" fill="{{ c.rule }}" letter-spacing="1.2">****************</text>
+      <text x="16" y="68">YOUR STORE</text><text x="80" y="68" text-anchor="end">2026-09-14</text>
+      <text x="16" y="77">Vollmilch ........</text><text x="80" y="77" text-anchor="end">1,19</text>
+      <text x="16" y="84">Bananen ..........</text><text x="80" y="84" text-anchor="end">2,09</text>
+      <text x="16" y="91">Kaffee Crema .....</text><text x="80" y="91" text-anchor="end">6,99</text>
+      <text x="80" y="99" text-anchor="end" fill="{{ c.rule }}">- - - - - - - - - - - -</text>
+      <text x="16" y="109" font-weight="500">TOTAL</text><text x="80" y="109" text-anchor="end" font-weight="500">10,27 EUR</text>
+    </g>
+  </sc-if>
+
+  <sc-if value="{{ cM }}" hint-placeholder-val="{{ false }}">
+    <path fill="{{ c.roll }}" d="M5.5 2H18.5A2.5 2.5 0 0 1 18.5 7H5.5A2.5 2.5 0 0 1 5.5 2Z"></path>
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M5 8H19V17A4 4 0 0 1 15 21H5ZM7 15H8V18H7ZM9 14H10V18H9ZM11 12H13V18H11ZM14 10H16V18H14Z"></path>
+    <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}"><path fill="{{ c.hi }}" d="M14 10H16V18H14Z"></path></sc-if>
+  </sc-if>
+  <sc-if value="{{ cS }}" hint-placeholder-val="{{ false }}">
+    <path fill="{{ c.roll }}" d="M3.5 1H12.5A1.5 1.5 0 0 1 12.5 4H3.5A1.5 1.5 0 0 1 3.5 1Z"></path>
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M3 5H13V11A3 3 0 0 1 10 14H3ZM5 10H6V12H5ZM7 9H8V12H7ZM9 7H11V12H9Z"></path>
+    <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}"><path fill="{{ c.hi }}" d="M9 7H11V12H9Z"></path></sc-if>
+  </sc-if>
+  <sc-if value="{{ cD }}" hint-placeholder-val="{{ false }}">
+    <path fill-rule="evenodd" fill="{{ c.roll }}" d="M16 4H80A8 8 0 0 1 80 20H16A8 8 0 0 1 16 4ZM16 8.5A3.5 3.5 0 1 0 16 15.5A3.5 3.5 0 1 0 16 8.5Z"></path>
+    <path fill-rule="evenodd" fill="{{ c.main }}" d="M14 24H82V100A16 16 0 0 1 66 116H14ZM22 32H54V36H22ZM22 41H44V45H22ZM62 41H74V45H62ZM22 50H50V54H22ZM64 50H74V54H64ZM22 92H24V104H22ZM27 88H29V104H27ZM32 90H34V104H32ZM37 82H41V104H37ZM44 76H48V104H44ZM51 70H57V104H51ZM60 62H66V104H60Z"></path>
+    <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}"><path fill="{{ c.hi }}" d="M60 62H66V104H60Z"></path></sc-if>
+  </sc-if>
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:200},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;A&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;v&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;s16&quot;,&quot;m24&quot;,&quot;detail&quot;,&quot;landing&quot;],&quot;default&quot;:&quot;m24&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;mono&quot;,&quot;inverse&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:96,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const dir = this.props.dir ?? "A";
+    const v = this.props.v ?? "m24";
+    const tone = this.props.tone ?? "full";
+    const size = Number(this.props.size ?? 96);
+    const inverse = tone === "inverse";
+    const S5 = [".###.", "#...#", "#....", ".###.", "....#", "#...#", ".###."];
+    const R5 = ["####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"];
+    const S3 = ["###", "#..", "###", "..#", "###"];
+    const R3 = ["##.", "#.#", "##.", "#.#", "#.#"];
+    const dots = (ox, oy, pitch, r) => {
+      let d = "";
+      [S5, R5].forEach((g, gi) => g.forEach((row, y) => [...row].forEach((ch, x) => {
+        if (ch !== "#") return;
+        const cx = ox + (x + gi * 6) * pitch, cy = oy + y * pitch;
+        d += `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+      })));
+      return d;
+    };
+    let pix = "";
+    [S3, R3].forEach((g, gi) => g.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch !== "#") return;
+      const px = 1 + (x + gi * 4) * 2, py = 2 + y * 2;
+      pix += `M${px} ${py}H${px + 2}V${py + 2}H${px}Z`;
+    })));
+    const mono = "currentColor", inv = "var(--primary-foreground)";
+    const c = tone === "full"
+      ? { main: "var(--primary)", roll: "var(--accent)", hi: "var(--secondary)", rule: "var(--accent)", ink: "var(--foreground)" }
+      : tone === "mono"
+        ? { main: mono, roll: mono, hi: mono, rule: mono, ink: mono }
+        : { main: inv, roll: inv, hi: inv, rule: inv, ink: inv };
+    const base = v === "s16" ? 16 : v === "m24" ? 24 : 96;
+    const pad = inverse ? base / 6 : 0;
+    const detail = v === "detail" || v === "landing";
+    const vbH = detail ? 128 : base;
+    return {
+      w: size,
+      h: detail ? Math.round((size * 128) / 96) : size,
+      vb: `${-pad} ${-pad} ${base + 2 * pad} ${vbH + 2 * pad}`,
+      sr: v === "s16" ? "crispEdges" : "geometricPrecision",
+      inverse,
+      full: tone === "full",
+      tile: { x: -pad, y: -pad, s: base + 2 * pad },
+      c,
+      aM: dir === "A" && v === "m24", aS: dir === "A" && v === "s16", aD: dir === "A" && v === "detail",
+      bM: dir === "B" && v === "m24", bS: dir === "B" && v === "s16", bD: dir === "B" && v === "detail",
+      lD: v === "landing",
+      cM: dir === "C" && v === "m24", cS: dir === "C" && v === "s16", cD: dir === "C" && v === "detail",
+      dotsM: dots(2, 6, 2, 0.8),
+      dotsD: dots(28, 14, 4, 1.6),
+      pixS: pix,
+    };
+  }
+}
+</script>
+</body>
+</html>

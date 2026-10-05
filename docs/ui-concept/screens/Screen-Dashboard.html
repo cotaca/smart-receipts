@@ -7,226 +7,248 @@
 </head>
 <body>
 <x-dc>
-<div style="display:flex;min-height:100%;box-sizing:border-box;background:var(--background);color:var(--foreground);font-family:Inter,ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased">
-  <sc-if value="{{ hasSidebar }}" hint-placeholder-val="{{ true }}">
-    <aside style="display:flex;width:220px;flex:none;flex-direction:column;border-right:1px solid var(--border);background:var(--card)">
-      <div style="display:flex;height:52px;flex:none;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:0.5rem;background:var(--primary);color:var(--primary-foreground)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v17l-2.5-1.5L15 21l-3-1.5L9 21l-2.5-1.5L4 21Z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
+<helmet>
+<link rel="stylesheet" href="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>:root{--font-geist-mono:"Geist Mono",ui-monospace,monospace}</style>
+<script src="_ds/smartreceipts-ui-6af46ab0-8af3-41d9-8392-1a07ff1ba7a0/_ds_bundle.js"></script>
+</helmet>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div class="relative flex bg-background font-sans text-xs text-foreground" style="min-height:100%;height:100%">
+  <x-import component-from-global-scope="SmartReceipts.SidebarProvider" class-name="min-h-0">
+    <sc-if value="{{ hasSidebar }}" hint-placeholder-val="{{ true }}">
+      <x-import component-from-global-scope="SmartReceipts.Sidebar" collapsible="none" class-name="border-r border-border">
+        <x-import component-from-global-scope="SmartReceipts.SidebarHeader" class-name="h-13 flex-row items-center gap-2 border-b border-border px-3.5">
+          <dc-import name="Logo-Mark" dir="A" v="m24" size="24" hint-size="24px,24px"></dc-import>
+          <span class="text-sm font-semibold tracking-tight text-foreground">SmartReceipts</span>
+        </x-import>
+        <x-import component-from-global-scope="SmartReceipts.SidebarContent">
+          <x-import component-from-global-scope="SmartReceipts.SidebarGroup">
+            <x-import component-from-global-scope="SmartReceipts.SidebarGroupLabel">Workspace</x-import>
+            <x-import component-from-global-scope="SmartReceipts.SidebarGroupContent">
+              <x-import component-from-global-scope="SmartReceipts.SidebarMenu">
+                <sc-for list="{{ nav }}" as="item" hint-placeholder-count="3">
+                  <x-import component-from-global-scope="SmartReceipts.SidebarMenuItem">
+                    <x-import component-from-global-scope="SmartReceipts.SidebarMenuButton" is-active="{{ item.active }}">
+                      <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ item.icon }}"></x-import>
+                      <span>{{ item.label }}</span>
+                    </x-import>
+                  </x-import>
+                </sc-for>
+              </x-import>
+            </x-import>
+          </x-import>
+        </x-import>
+        <x-import component-from-global-scope="SmartReceipts.SidebarFooter" class-name="border-t border-border">
+          <x-import component-from-global-scope="SmartReceipts.SidebarMenuButton" size="lg">
+            <x-import component-from-global-scope="SmartReceipts.Avatar" size="sm"><x-import component-from-global-scope="SmartReceipts.AvatarFallback">AN</x-import></x-import>
+            <span class="flex-1 truncate text-xs text-foreground">anna@web.de</span>
+          </x-import>
+        </x-import>
+      </x-import>
+    </sc-if>
+    <x-import component-from-global-scope="SmartReceipts.SidebarInset">
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="SmartReceipts.SidebarTrigger" class-name="m-2 self-start" aria-label="Toggle sidebar"></x-import>
+      </sc-if>
+      <main class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 py-7 {{ padX }}">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <sc-if value="{{ notEmbedded }}" hint-placeholder-val="{{ true }}"><h1 class="text-lg font-semibold tracking-tight text-foreground">Dashboard</h1></sc-if><sc-if value="{{ embedded }}" hint-placeholder-val="{{ false }}"><div class="text-lg font-semibold tracking-tight text-foreground">Dashboard</div></sc-if>
+          <x-import component-from-global-scope="SmartReceipts.Select" items="{{ periods }}" default-value="last-12-months">
+            <x-import component-from-global-scope="SmartReceipts.SelectTrigger" size="sm" aria-label="Period"><x-import component-from-global-scope="SmartReceipts.SelectValue"></x-import></x-import>
+            <x-import component-from-global-scope="SmartReceipts.SelectContent" class-name="w-auto min-w-(--anchor-width)">
+              <sc-for list="{{ periods }}" as="o" hint-placeholder-count="3"><x-import component-from-global-scope="SmartReceipts.SelectItem" value="{{ o.value }}">{{ o.label }}</x-import></sc-for>
+            </x-import>
+          </x-import>
         </div>
-        <span style="font-size:14px;font-weight:600;letter-spacing:-0.01em">SmartReceipts</span>
-      </div>
-      <div style="display:flex;flex:1;flex-direction:column;gap:2px;padding:10px 8px">
-        <div style="padding:6px 8px 4px;font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Workspace</div>
-        <div style="display:flex;height:28px;align-items:center;gap:8px;border-radius:0.5rem;background:var(--muted);padding:0 8px;font-size:12px;font-weight:500">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9.5l8-6 8 6V19a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1Z"></path></svg>
-          <span>Dashboard</span>
-        </div>
-        <div style="display:flex;height:28px;align-items:center;gap:8px;border-radius:0.5rem;padding:0 8px;font-size:12px;font-weight:500">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v17l-2.5-1.5L15 21l-3-1.5L9 21l-2.5-1.5L4 21Z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
-          <span>Receipts</span>
-          <span style="margin-left:auto;font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;color:var(--muted-foreground)">128</span>
-        </div>
-        <div style="display:flex;height:28px;align-items:center;gap:8px;border-radius:0.5rem;padding:0 8px;font-size:12px;font-weight:500">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M5 12a7 7 0 0 1 .1-1.2L3.4 9.2l1.7-3 2.2.9A7 7 0 0 1 9.4 5.7L9.8 3.4h3.4l.4 2.3a7 7 0 0 1 2.1 1.4l2.2-.9 1.7 3-1.7 1.6A7 7 0 0 1 19 12a7 7 0 0 1-.1 1.2l1.7 1.6-1.7 3-2.2-.9a7 7 0 0 1-2.1 1.4l-.4 2.3H9.8l-.4-2.3a7 7 0 0 1-2.1-1.4l-2.2.9-1.7-3 1.7-1.6A7 7 0 0 1 5 12Z"></path></svg>
-          <span>Settings</span>
-        </div>
-      </div>
-      <div style="display:flex;height:48px;flex:none;align-items:center;gap:8px;border-top:1px solid var(--border);padding:0 12px">
-        <div style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:9999px;background:var(--muted);box-shadow:0 0 0 1px var(--border);font-size:12px;color:var(--muted-foreground)">AN</div>
-        <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">anna@web.de</div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted-foreground)"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-      </div>
-    </aside>
-  </sc-if>
 
-  <div style="display:flex;flex:1;min-width:0;flex-direction:column">
-    <header style="display:flex;height:52px;flex:none;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding:0 16px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:0.5rem;border:1px solid var(--border)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+          <x-import component-from-global-scope="SmartReceipts.Alert" variant="destructive" role="alert">
+            <x-import component-from-global-scope="SmartReceipts.AlertDescription">Couldn't load the dashboard. Please try again.</x-import>
+          </x-import>
+        </sc-if>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div class="flex flex-col gap-3">
+            <x-import component-from-global-scope="SmartReceipts.Skeleton" class-name="h-24 w-full"></x-import>
+            <x-import component-from-global-scope="SmartReceipts.Skeleton" class-name="h-64 w-full"></x-import>
+            <x-import component-from-global-scope="SmartReceipts.Skeleton" class-name="h-48 w-full"></x-import>
           </div>
         </sc-if>
-        <span style="font-size:{{ titleSize }};font-weight:600;letter-spacing:-0.02em">Dashboard</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div style="display:flex;height:28px;align-items:center;gap:5px;border-radius:0.5rem;border:1px solid var(--border);padding:0 8px;font-size:12px;font-weight:500">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M8 3.5v3M16 3.5v3M3.5 10h17"></path></svg>
-          <span>Last 12 months</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
-        </div>
-      </div>
-    </header>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <x-import component-from-global-scope="SmartReceipts.Empty" class-name="flex-1 border border-dashed border-border bg-muted">
+            <x-import component-from-global-scope="SmartReceipts.EmptyHeader">
+              <x-import component-from-global-scope="SmartReceipts.EmptyMedia" variant="icon"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.DashboardSquare01Icon }}"></x-import></x-import>
+              <x-import component-from-global-scope="SmartReceipts.EmptyTitle">No receipts yet</x-import>
+              <x-import component-from-global-scope="SmartReceipts.EmptyDescription">Upload your first receipt to see your spending here.</x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.EmptyContent">
+              <x-import component-from-global-scope="SmartReceipts.Button" size="lg">
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.Upload04Icon }}"></x-import>
+                Upload receipt
+              </x-import>
+            </x-import>
+          </x-import>
+        </sc-if>
 
-    <main style="display:flex;flex:1;flex-direction:column;gap:12px;padding:16px;min-width:0">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-        <div style="display:flex;flex-direction:column;gap:6px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-          <span style="font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Spent in September</span>
-          <span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:24px;font-weight:500;letter-spacing:-0.02em">248,55 €</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted-foreground)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="M12 19V6M6 12.5 12 6l6 6.5"></path></svg>
-            <span style="font-family:'Geist Mono',ui-monospace,monospace;color:var(--foreground)">+11,4%</span> vs August
-          </span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-          <span style="font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Average basket</span>
-          <span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:24px;font-weight:500;letter-spacing:-0.02em">27,62 €</span>
-          <span style="font-size:12px;color:var(--muted-foreground)">across <span style="font-family:'Geist Mono',ui-monospace,monospace;color:var(--foreground)">9</span> receipts this month</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-          <span style="font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)">Busiest merchant</span>
-          <span style="font-size:20px;font-weight:600;letter-spacing:-0.02em">REWE</span>
-          <span style="font-size:12px;color:var(--muted-foreground)"><span style="font-family:'Geist Mono',ui-monospace,monospace;color:var(--foreground)">4</span> receipts · <span style="font-family:'Geist Mono',ui-monospace,monospace;color:var(--foreground)">109,45 €</span></span>
-        </div>
-      </div>
+        <sc-if value="{{ isFilled }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ showExcluded }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="SmartReceipts.Alert">
+              <x-import component-from-global-scope="SmartReceipts.AlertDescription">2 receipts in other currencies are not counted. Only EUR is shown.</x-import>
+            </x-import>
+          </sc-if>
 
-      <div style="display:flex;flex-direction:column;gap:10px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-          <div style="display:flex;flex-direction:column;gap:1px">
-            <span style="font-size:13px;font-weight:500">Spend per month</span>
-            <span style="font-size:11px;color:var(--muted-foreground)">Oct 2025 – Sep 2026 · EUR</span>
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="3">
+              <x-import component-from-global-scope="SmartReceipts.Card" size="sm">
+                <x-import component-from-global-scope="SmartReceipts.CardHeader">
+                  <x-import component-from-global-scope="SmartReceipts.CardDescription" class-name="text-[10px] font-medium tracking-wider uppercase">{{ k.label }}</x-import>
+                  <x-import component-from-global-scope="SmartReceipts.CardTitle" class-name="text-2xl font-medium tracking-tight"><span class="{{ k.valueCls }}">{{ k.value }}</span></x-import>
+                </x-import>
+                <x-import component-from-global-scope="SmartReceipts.CardContent" class-name="text-xs text-muted-foreground">{{ k.pre }}<span class="font-mono text-foreground">{{ k.mono }}</span> {{ k.rest }}</x-import>
+              </x-import>
+            </sc-for>
           </div>
-          <div style="display:flex;margin-left:auto;height:28px;align-items:center;border-radius:0.625rem;background:var(--muted);padding:3px">
-            <div style="display:flex;height:100%;align-items:center;border-radius:0.5rem;background:var(--background);padding:0 8px;font-size:11px;font-weight:500">Monthly</div>
-            <div style="display:flex;height:100%;align-items:center;padding:0 8px;font-size:11px;color:color-mix(in oklch, var(--foreground) 60%, transparent)">Quarterly</div>
-          </div>
-        </div>
-        <svg viewBox="0 0 600 170" style="width:100%;height:auto;overflow:visible" role="img" aria-label="Monthly spend bar chart">
-          <line x1="0" y1="130" x2="600" y2="130" stroke="var(--border)" stroke-width="1"></line>
-          <line x1="0" y1="86" x2="600" y2="86" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
-          <line x1="0" y1="42" x2="600" y2="42" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>
-          <sc-for list="{{ bars }}" as="bar" hint-placeholder-count="12">
-            <rect x="{{ bar.x }}" y="{{ bar.y }}" width="34" height="{{ bar.h }}" rx="2" fill="{{ bar.fill }}"></rect>
-            <text x="{{ bar.cx }}" y="146" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--muted-foreground)">{{ bar.label }}</text>
-            <text x="{{ bar.cx }}" y="{{ bar.vy }}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9.5" fill="var(--muted-foreground)">{{ bar.value }}</text>
-          </sc-for>
-        </svg>
-      </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
-        <div style="display:flex;flex-direction:column;gap:10px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-          <div style="display:flex;align-items:baseline;gap:8px">
-            <span style="font-size:13px;font-weight:500">Top merchants</span>
-            <span style="margin-left:auto;font-size:11px;color:var(--muted-foreground)">this year</span>
-          </div>
-          <sc-for list="{{ merchants }}" as="m" hint-placeholder-count="5">
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px;font-size:12px">
-                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.name }}</span>
-                <span style="margin-left:auto;font-family:'Geist Mono',ui-monospace,monospace;color:var(--muted-foreground)">{{ m.count }}×</span>
-                <span style="font-family:'Geist Mono',ui-monospace,monospace;font-weight:500;min-width:66px;text-align:right">{{ m.total }}</span>
-              </div>
-              <div style="height:6px;width:100%;overflow:hidden;border-radius:9999px;background:var(--muted)">
-                <div style="height:100%;width:{{ m.pct }};border-radius:9999px;background:{{ m.fill }}"></div>
-              </div>
-            </div>
-          </sc-for>
-        </div>
+          <x-import component-from-global-scope="SmartReceipts.Card" size="sm">
+            <x-import component-from-global-scope="SmartReceipts.CardHeader">
+              <x-import component-from-global-scope="SmartReceipts.CardTitle">Spend per month</x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardDescription">Nov 2025 – Oct 2026 · <span class="font-mono">EUR</span></x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardAction">
+                <x-import component-from-global-scope="SmartReceipts.Tabs" default-value="monthly">
+                  <x-import component-from-global-scope="SmartReceipts.TabsList">
+                    <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="monthly">Monthly</x-import>
+                    <x-import component-from-global-scope="SmartReceipts.TabsTrigger" value="quarterly">Quarterly</x-import>
+                  </x-import>
+                </x-import>
+              </x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.CardContent">{{ chart }}</x-import>
+          </x-import>
 
-        <div style="display:flex;flex-direction:column;gap:10px;border-radius:0.625rem;border:1px dashed var(--border);background:var(--card);padding:14px">
-          <div style="display:flex;align-items:baseline;gap:8px">
-            <span style="font-size:13px;font-weight:500">Most-bought products</span>
-            <span style="margin-left:auto;font-size:11px;color:var(--muted-foreground)">needs line items</span>
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
+            <x-import component-from-global-scope="SmartReceipts.Card" size="sm">
+              <x-import component-from-global-scope="SmartReceipts.CardHeader">
+                <x-import component-from-global-scope="SmartReceipts.CardTitle">Top merchants</x-import>
+                <x-import component-from-global-scope="SmartReceipts.CardAction" class-name="text-xs text-muted-foreground">Last 12 months</x-import>
+              </x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardContent" class-name="flex flex-col gap-3">
+                <sc-for list="{{ merchants }}" as="m" hint-placeholder-count="5">
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-baseline gap-2 text-xs">
+                      <span class="truncate">{{ m.name }}</span>
+                      <span class="ml-auto font-mono text-muted-foreground">{{ m.count }}</span>
+                      <span class="min-w-16 text-right font-mono font-medium">{{ m.total }}</span>
+                    </div>
+                    <x-import component-from-global-scope="SmartReceipts.Progress" value="{{ m.pct }}" aria-hidden="true"></x-import>
+                  </div>
+                </sc-for>
+              </x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.Card" size="sm">
+              <x-import component-from-global-scope="SmartReceipts.CardHeader">
+                <x-import component-from-global-scope="SmartReceipts.CardTitle">Most-bought products</x-import>
+                <x-import component-from-global-scope="SmartReceipts.CardAction" class-name="text-xs text-muted-foreground">Last 12 months</x-import>
+              </x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardContent">
+                <x-import component-from-global-scope="SmartReceipts.Table">
+                  <x-import component-from-global-scope="SmartReceipts.TableBody">
+                    <sc-for list="{{ products }}" as="p" hint-placeholder-count="5">
+                      <x-import component-from-global-scope="SmartReceipts.TableRow">
+                        <x-import component-from-global-scope="SmartReceipts.TableCell" class-name="max-w-0 truncate">{{ p.name }}</x-import>
+                        <x-import component-from-global-scope="SmartReceipts.TableCell" class-name="w-px text-right font-mono whitespace-nowrap text-muted-foreground">{{ p.count }}</x-import>
+                        <x-import component-from-global-scope="SmartReceipts.TableCell" class-name="w-px text-right font-mono whitespace-nowrap">{{ p.total }}</x-import>
+                      </x-import>
+                    </sc-for>
+                  </x-import>
+                </x-import>
+              </x-import>
+            </x-import>
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <tbody>
-              <sc-for list="{{ products }}" as="p" hint-placeholder-count="5">
-                <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:6px 0">{{ p.name }}</td>
-                  <td style="padding:6px 0;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;color:var(--muted-foreground)">{{ p.qty }}</td>
-                  <td style="padding:6px 0;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;width:70px">{{ p.total }}</td>
-                </tr>
+
+          <x-import component-from-global-scope="SmartReceipts.Card" size="sm">
+            <x-import component-from-global-scope="SmartReceipts.CardHeader">
+              <x-import component-from-global-scope="SmartReceipts.CardTitle">Recent receipts</x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardAction"><a href="#" class="text-xs font-medium text-foreground">View all</a></x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.CardContent" class-name="flex flex-col">
+              <sc-for list="{{ recent }}" as="r" hint-placeholder-count="5">
+                <a href="#" class="flex items-center gap-3 border-t border-border py-2 text-xs first:border-t-0 hover:bg-muted">
+                  <span class="min-w-0 flex-1 truncate font-medium">{{ r.merchant }}</span>
+                  <span class="font-mono text-muted-foreground">{{ r.date }}</span>
+                  <span class="min-w-20 text-right font-mono font-medium">{{ r.amount }}</span>
+                </a>
               </sc-for>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;border-radius:0.625rem;background:var(--card);padding:14px;box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
-        <div style="display:flex;align-items:baseline;gap:8px">
-          <span style="font-size:13px;font-weight:500">Recent receipts</span>
-          <span style="margin-left:auto;font-size:11px;font-weight:500;color:var(--foreground)">View all</span>
-        </div>
-        <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
-          <div style="display:flex;align-items:center;gap:10px;border-top:1px solid var(--border);padding-top:8px">
-            <div style="width:28px;height:28px;flex:none;border-radius:0.5rem;background:var(--muted);box-shadow:0 0 0 1px var(--border)"></div>
-            <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500">{{ r.merchant }}</div>
-            <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted-foreground)">{{ r.date }}</div>
-            <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:500;min-width:64px;text-align:right">{{ r.amount }}</div>
-          </div>
-        </sc-for>
-      </div>
-    </main>
-
-    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
-      <nav style="display:flex;height:60px;flex:none;align-items:center;justify-content:space-around;border-top:1px solid var(--border);background:var(--card);padding:0 8px 6px">
-        <div style="display:flex;width:64px;flex-direction:column;align-items:center;gap:3px;padding-top:8px;color:var(--foreground)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9.5l8-6 8 6V19a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1Z"></path></svg>
-          <span style="font-size:10px;font-weight:600">Dashboard</span>
-        </div>
-        <div style="display:flex;width:64px;flex-direction:column;align-items:center;gap:3px;padding-top:8px;color:var(--muted-foreground)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v17l-2.5-1.5L15 21l-3-1.5L9 21l-2.5-1.5L4 21Z"></path><path d="M8 8h8M8 12h8M8 16h4"></path></svg>
-          <span style="font-size:10px;font-weight:500">Receipts</span>
-        </div>
-        <div style="display:flex;width:52px;height:44px;align-items:center;justify-content:center;border-radius:0.625rem;background:var(--primary);color:var(--primary-foreground)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
-        </div>
-        <div style="display:flex;width:64px;flex-direction:column;align-items:center;gap:3px;padding-top:8px;color:var(--muted-foreground)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M5 12a7 7 0 0 1 .1-1.2L3.4 9.2l1.7-3 2.2.9A7 7 0 0 1 9.4 5.7L9.8 3.4h3.4l.4 2.3a7 7 0 0 1 2.1 1.4l2.2-.9 1.7 3-1.7 1.6A7 7 0 0 1 19 12a7 7 0 0 1-.1 1.2l1.7 1.6-1.7 3-2.2-.9a7 7 0 0 1-2.1 1.4l-.4 2.3H9.8l-.4-2.3a7 7 0 0 1-2.1-1.4l-2.2.9-1.7-3 1.7-1.6A7 7 0 0 1 5 12Z"></path></svg>
-          <span style="font-size:10px;font-weight:500">Settings</span>
-        </div>
-      </nav>
-    </sc-if>
-  </div>
+            </x-import>
+          </x-import>
+        </sc-if>
+      </main>
+    </x-import>
+  </x-import>
 </div>
+</sc-if>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:860},&quot;chrome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sidebar&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;sidebar&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:1000},&quot;chrome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sidebar&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;sidebar&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;filled&quot;,&quot;empty&quot;,&quot;loading&quot;,&quot;error&quot;],&quot;default&quot;:&quot;filled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;excluded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
+  componentDidMount() {
+    if (!window.SmartReceipts) this._t = setInterval(() => { if (window.SmartReceipts) { clearInterval(this._t); this.forceUpdate(); } }, 50);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  chart(S) {
+    if (!S.ChartContainer) return null;
+    const h = React.createElement;
+    const months = ["Nov","Dec","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"];
+    const totals = [1024, 1312, 948, 1086, 1142, 998, 1076, 1204, 1118, 1148, 1163, 164];
+    const data = months.map((label, i) => ({ key: label, label, total: totals[i], current: i === 11 }));
+    return h(S.ChartContainer, { config: { total: { color: "var(--chart-1)" } }, role: "img", "aria-label": "Spend per month, Nov 2025 – Oct 2026, EUR", className: "aspect-auto h-48 w-full" },
+      h(S.BarChart, { accessibilityLayer: true, data },
+        h(S.XAxis, { dataKey: "label", tickLine: false, axisLine: false }),
+        h(S.ChartTooltip, { cursor: false, content: h(S.ChartTooltipContent, { hideIndicator: true }) }),
+        h(S.Bar, { dataKey: "total", shape: (p) => h(S.Rectangle, { ...p, radius: 2, fill: `var(${p.payload.current ? "--chart-2" : "--chart-1"})` }) })));
+  }
   renderVals() {
+    const S = window.SmartReceipts || {};
     const chrome = this.props.chrome ?? "sidebar";
-    const mobile = chrome === "mobile";
-    const data = [
-      { label: "Oct", v: 212 }, { label: "Nov", v: 268 }, { label: "Dec", v: 341 },
-      { label: "Jan", v: 196 }, { label: "Feb", v: 224 }, { label: "Mar", v: 251 },
-      { label: "Apr", v: 187 }, { label: "May", v: 263 }, { label: "Jun", v: 298 },
-      { label: "Jul", v: 231 }, { label: "Aug", v: 223 }, { label: "Sep", v: 249 },
-    ];
-    const max = 360;
-    const bars = data.map((d, i) => {
-      const h = Math.round((d.v / max) * 108);
-      const x = 8 + i * 49;
-      return {
-        x, cx: x + 17, y: 130 - h, h, vy: 130 - h - 6,
-        label: d.label,
-        value: d.v,
-        fill: i === data.length - 1 ? "var(--chart-2)" : "var(--chart-1)",
-      };
-    });
-    const merchants = [
-      { name: "REWE", count: 38, total: "1 042,80 €", pct: "100%", fill: "var(--chart-1)" },
-      { name: "Edeka Südwest", count: 21, total: "612,45 €", pct: "59%", fill: "var(--chart-2)" },
-      { name: "dm-drogerie markt", count: 17, total: "298,10 €", pct: "29%", fill: "var(--chart-3)" },
-      { name: "Aldi Süd", count: 12, total: "243,62 €", pct: "23%", fill: "var(--chart-4)" },
-      { name: "Bahnhof Apotheke", count: 6, total: "104,28 €", pct: "10%", fill: "var(--chart-5)" },
-    ];
+    const state = this.props.state ?? "filled";
+    const nav = [
+      { key: "dashboard", label: "Dashboard", icon: S.DashboardSquare01Icon },
+      { key: "receipts", label: "Receipts", icon: S.Invoice01Icon },
+      { key: "settings", label: "Settings", icon: S.Settings01Icon },
+    ].map((n) => ({ ...n, active: n.key === "dashboard" }));
+    const m = [["REWE Markt", 38, 1612.4], ["EDEKA Center", 21, 1048.75], ["Rossmann", 17, 342.1], ["Lidl", 14, 296.55], ["dm-drogerie markt", 9, 148.3]];
+    const max = m[0][2];
+    const fmt = (n) => n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return {
-      hasSidebar: !mobile,
-      isMobile: mobile,
-      titleSize: mobile ? "16px" : "18px",
-      bars, merchants,
-      products: [
-        { name: "Bio Milch 3,8%", qty: "42×", total: "54,18 €" },
-        { name: "Vollkornbrot", qty: "31×", total: "77,19 €" },
-        { name: "Bananen (lose)", qty: "28×", total: "41,32 €" },
-        { name: "Kaffee ganze Bohne", qty: "11×", total: "98,89 €" },
-        { name: "Spülmittel", qty: "9×", total: "16,11 €" },
+      embedded: !!this.props.embedded, notEmbedded: !this.props.embedded,
+      ready: !!window.SmartReceipts,
+      ic: S,
+      nav,
+      hasSidebar: chrome === "sidebar",
+      isMobile: chrome !== "sidebar",
+      padX: chrome === "sidebar" ? "px-8" : "px-4",
+      isFilled: state === "filled",
+      isEmpty: state === "empty",
+      isLoading: state === "loading",
+      isError: state === "error",
+      showExcluded: this.props.excluded ?? true,
+      periods: [
+        { value: "last-12-months", label: "Last 12 months" },
+        { value: "this-year", label: "This year" },
+        { value: "last-year", label: "Last year" },
       ],
+      kpis: [
+        { label: "Spent this month", value: "164,32 EUR", valueCls: "font-mono", pre: "", mono: "−85,9 %", rest: "vs last month" },
+        { label: "Average basket", value: "41,08 EUR", valueCls: "font-mono", pre: "across ", mono: "4", rest: "receipts this month" },
+        { label: "Busiest merchant", value: "REWE Markt", valueCls: "", pre: "", mono: "4", rest: "receipts · 118,40 EUR" },
+      ],
+      chart: this.chart(S),
+      merchants: m.map(([name, c, t]) => ({ name, count: c + "×", total: fmt(t), pct: (t / max) * 100 })),
+      products: [["Bio Vollmilch 3,8 %", 46, 54.74], ["Bananen", 31, 64.82], ["Vollkornbrot", 24, 59.76], ["Kaffee Crema 500 g", 12, 83.88], ["Pfand", 58, -14.5]].map(([name, c, t]) => ({ name, count: c + "×", total: fmt(t) })),
       recent: [
-        { merchant: "REWE Markt Süd", date: "14 Sep", amount: "42,18 €" },
-        { merchant: "Rewe eBon (PDF)", date: "13 Sep", amount: "18,74 €" },
-        { merchant: "dm-drogerie markt", date: "12 Sep", amount: "13,95 €" },
-        { merchant: "Bahnhof Apotheke", date: "09 Sep", amount: "8,40 €" },
+        { merchant: "REWE Markt", date: "03.10.2026", amount: "54,12 EUR" },
+        { merchant: "Rossmann", date: "02.10.2026", amount: "23,80 EUR" },
+        { merchant: "EDEKA Center", date: "01.10.2026", amount: "61,05 EUR" },
+        { merchant: "Lidl", date: "01.10.2026", amount: "25,35 EUR" },
+        { merchant: "REWE Markt", date: "29.09.2026", amount: "38,64 EUR" },
       ],
     };
   }

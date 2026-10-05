@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+
+</head>
+<body>
+
+<x-dc>
+<helmet>
+<title>SmartReceipts: receipts read, sorted and analysed</title>
+<meta name="description" content="Snap or upload a receipt. SmartReceipts reads merchant, total, date and line items, and shows where your money goes. Private by default.">
+<meta property="og:title" content="SmartReceipts: receipts read, sorted and analysed">
+<meta property="og:image" content="og-image.png">
+
+<script src="_ds/smartreceipts-ui/_ds_bundle.js"></script>
+</helmet>
+<sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+<div class="{{ themeCls }}" lang="{{ lang }}" style="min-height:100vh">
+<div class="bg-background font-sans text-foreground" style="min-height:100vh;overflow-x:hidden">
+
+  <header style="position:sticky;top:0;z-index:20;background:var(--background);border-bottom:1px solid var(--border)">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;max-width:1200px;margin:0 auto;padding:10px {{ padX }}">
+      <a href="#top" aria-label="SmartReceipts home" style="display:flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;color:var(--foreground);border-radius:6px" style-focus-visible="outline:2px solid var(--ring);outline-offset:2px">
+        <dc-import name="Logo-Mark" dir="A" v="m24" size="24" hint-size="24px,24px"></dc-import>
+        <span class="text-sm font-semibold tracking-tight">SmartReceipts</span>
+      </a>
+      <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+        <div role="group" aria-label="{{ t.langLabel }}" style="display:flex;gap:2px">
+          <x-import component-from-global-scope="SmartReceipts.Button" variant="{{ enVariant }}" size="sm" aria-pressed="{{ isEn }}" on-click="{{ setEn }}" dc-props="{{ btnIcon }}">EN</x-import>
+          <x-import component-from-global-scope="SmartReceipts.Button" variant="{{ deVariant }}" size="sm" aria-pressed="{{ isDe }}" on-click="{{ setDe }}" dc-props="{{ btnIcon }}">DE</x-import>
+        </div>
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="ghost" size="icon" aria-label="{{ t.themeToggle }}" on-click="{{ toggleTheme }}" dc-props="{{ btnIcon }}">
+          <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ themeIcon }}"></x-import>
+        </x-import>
+      </div>
+      <div style="display:flex;gap:8px;{{ headerCtaWrap }}">
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="outline" render="{{ linkLogin }}" native-button="{{ false }}" dc-props="{{ btnFlex }}">{{ t.login }}</x-import>
+        <x-import component-from-global-scope="SmartReceipts.Button" render="{{ linkRegister }}" native-button="{{ false }}" dc-props="{{ btnFlex }}">{{ t.register }}</x-import>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section aria-labelledby="hero-h" style="max-width:1200px;margin:0 auto;padding:{{ heroPad }} {{ padX }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:40px 56px">
+        <div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:20px;max-width:620px">
+          <h1 id="hero-h" style="margin:0;font-size:{{ h1Size }};line-height:1.08;letter-spacing:-0.035em;font-weight:600;text-wrap:balance">{{ t.h1 }}</h1>
+          <p style="margin:0;font-size:{{ leadSize }};line-height:1.55;color:var(--muted-foreground);max-width:52ch;text-wrap:pretty">{{ t.lead }}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <x-import component-from-global-scope="SmartReceipts.Button" size="lg" render="{{ linkRegister }}" native-button="{{ false }}" dc-props="{{ btnHero }}">{{ t.register }}</x-import>
+            <x-import component-from-global-scope="SmartReceipts.Button" size="lg" variant="outline" render="{{ linkLogin }}" native-button="{{ false }}" dc-props="{{ btnHero }}">{{ t.login }}</x-import>
+          </div>
+        </div>
+        <div role="img" aria-label="{{ t.heroAlt }}" style="flex:1 1 auto;display:flex;justify-content:center;min-width:0">
+          <div style="display:flex;flex-direction:{{ heroDirFlex }};align-items:center;gap:12px">
+          <div style="flex:none"><dc-import name="Logo-Mark" dir="{{ heroDir }}" v="{{ heroV }}" size="{{ heroSize }}" hint-size="240px,320px"></dc-import></div>
+          <span aria-hidden="true" style="display:flex;color:var(--muted-foreground);transform:rotate({{ arrowRot }})"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.ArrowRight01Icon }}" class-name="size-5"></x-import></span>
+          <div style="flex:none">
+          <x-import component-from-global-scope="SmartReceipts.Card" size="sm" class-name="w-60">
+            <x-import component-from-global-scope="SmartReceipts.CardHeader">
+              <x-import component-from-global-scope="SmartReceipts.CardDescription" class-name="text-[10px] font-medium tracking-wider uppercase">{{ t.heroCardLabel }}</x-import>
+              <x-import component-from-global-scope="SmartReceipts.CardTitle" class-name="text-2xl font-medium tracking-tight"><span class="font-mono">10,27 EUR</span></x-import>
+            </x-import>
+            <x-import component-from-global-scope="SmartReceipts.CardContent" class-name="flex flex-col gap-2 text-xs">
+              <sc-for list="{{ heroRows }}" as="r" hint-placeholder-count="4">
+                <div class="flex items-center gap-2 border-t border-border pt-2">
+                  <span class="text-muted-foreground" style="width:76px">{{ r.k }}</span>
+                  <span class="{{ r.cls }}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.v }}</span>
+                  <sc-if value="{{ r.badge }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="SmartReceipts.Badge" variant="secondary">{{ t.suggested }}</x-import></sc-if>
+                </div>
+              </sc-for>
+            </x-import>
+          </x-import>
+          </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="how-h" style="border-top:1px solid var(--border);background:var(--card)">
+      <div style="max-width:1200px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-direction:column;gap:28px">
+        <h2 id="how-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.howH }}</h2>
+        <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+            <li style="display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:12px;background:var(--background);box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="font-mono" aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-size:13px;font-weight:500">{{ s.n }}</span>
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ s.icon }}" class-name="size-5 text-muted-foreground"></x-import>
+              </div>
+              <h3 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ s.h }}</h3>
+              <p style="margin:0;font-size:14px;line-height:1.55;color:var(--muted-foreground)">{{ s.p }}</p>
+            </li>
+          </sc-for>
+        </ol>
+      </div>
+    </section>
+
+    <section aria-labelledby="feat-h" style="border-top:1px solid var(--border)">
+      <div style="max-width:1200px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-direction:column;gap:28px">
+        <h2 id="feat-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.featH }}</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+          <sc-for list="{{ features }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px color-mix(in oklch, var(--foreground) 10%, transparent)">
+              <span style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--muted)"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ f.icon }}" class-name="size-5 text-foreground"></x-import></span>
+              <h3 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ f.h }}</h3>
+              <p style="margin:0;font-size:14px;line-height:1.55;color:var(--muted-foreground)">{{ f.p }}</p>
+              <sc-if value="{{ f.mono }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ f.mono }}" as="m" hint-placeholder-count="2"><x-import component-from-global-scope="SmartReceipts.Badge" variant="outline" class-name="font-mono">{{ m }}</x-import></sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="priv-h" style="border-top:1px solid var(--border);background:var(--card)">
+      <div style="max-width:1200px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-direction:column;gap:28px">
+        <h2 id="priv-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.privH }}</h2>
+        <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px">
+          <sc-for list="{{ privacy }}" as="p" hint-placeholder-count="3">
+            <li style="display:flex;gap:14px;align-items:flex-start">
+              <span style="display:flex;flex:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--muted)"><x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ p.icon }}" class-name="size-5 text-foreground"></x-import></span>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <h3 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ p.h }}</h3>
+                <p style="margin:0;font-size:14px;line-height:1.55;color:var(--muted-foreground)">{{ p.p }}</p>
+              </div>
+            </li>
+          </sc-for>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="prev-h" style="border-top:1px solid var(--border)">
+      <div style="max-width:1200px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-direction:column;gap:28px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h2 id="prev-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.prevH }}</h2>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:var(--muted-foreground);max-width:60ch">{{ t.prevP }}</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:28px">
+          <figure role="img" aria-label="{{ t.laptopAlt }}" style="margin:0;display:flex;flex-direction:column;align-items:center">
+            <div style="padding:10px 10px 12px;border-radius:14px 14px 4px 4px;background:var(--foreground)">
+              <div style="width:{{ lap.w }}px;height:{{ lap.h }}px;overflow:hidden;border-radius:4px;background:var(--background)">
+                <div style="width:1240px;height:860px;transform:scale({{ lap.s }});transform-origin:0 0;pointer-events:none" inert="">
+                  <dc-import name="Screen-Dashboard" chrome="sidebar" state="filled" embedded="{{ true }}" hint-size="1240px,860px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="width:{{ lap.base }}px;height:12px;border-radius:0 0 10px 10px;background:color-mix(in oklch, var(--foreground) 70%, var(--background))"></div>
+          </figure>
+          <figure role="img" aria-label="{{ t.phoneAlt }}" style="margin:0;padding:10px;border-radius:34px;background:var(--foreground)">
+            <div style="width:{{ ph.w }}px;height:{{ ph.h }}px;overflow:hidden;border-radius:24px;background:var(--background)">
+              <div style="width:390px;height:844px;transform:scale({{ ph.s }});transform-origin:0 0;pointer-events:none" inert="">
+                <dc-import name="Screen-ReceiptForm" state="review" compact="{{ true }}" hint-size="390px,844px"></dc-import>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-h" style="border-top:1px solid var(--border);background:var(--card)">
+      <div style="max-width:820px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-direction:column;gap:20px">
+        <h2 id="faq-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.faqH }}</h2>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ faq }}" as="q" hint-placeholder-count="6">
+            <details style="border-top:1px solid var(--border)" open="{{ q.open }}">
+              <summary style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:10px 0;cursor:pointer;list-style:none;font-size:15px;font-weight:500;border-radius:6px" style-focus-visible="outline:2px solid var(--ring);outline-offset:2px">
+                <h3 style="margin:0;font:inherit">{{ q.q }}</h3>
+                <x-import component-from-global-scope="SmartReceipts.HugeiconsIcon" icon="{{ ic.ArrowDown01Icon }}" class-name="size-4 flex-none text-muted-foreground"></x-import>
+              </summary>
+              <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:var(--muted-foreground);max-width:68ch">{{ q.a }}</p>
+            </details>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="cta-h" style="background:var(--primary);color:var(--primary-foreground)">
+      <div style="max-width:1200px;margin:0 auto;padding:{{ secPad }} {{ padX }};display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:560px">
+          <h2 id="cta-h" style="margin:0;font-size:{{ h2Size }};line-height:1.15;letter-spacing:-0.025em;font-weight:600">{{ t.ctaH }}</h2>
+          <p style="margin:0;font-size:15px;line-height:1.55">{{ t.ctaP }}</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <x-import component-from-global-scope="SmartReceipts.Button" size="lg" variant="secondary" render="{{ linkRegister }}" native-button="{{ false }}" dc-props="{{ btnHero }}">{{ t.register }}</x-import>
+          <a href="login" style="display:flex;align-items:center;min-height:44px;padding:0 6px;font-size:14px;font-weight:500;color:var(--primary-foreground);text-underline-offset:3px;border-radius:6px" style-focus-visible="outline:2px solid var(--primary-foreground);outline-offset:2px">{{ t.ctaLogin }}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="border-top:1px solid var(--border)">
+    <div style="max-width:1200px;margin:0 auto;padding:28px {{ padX }};display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;font-size:13px;color:var(--muted-foreground)">
+      <span class="font-mono">© 2026 SmartReceipts</span>
+      <nav aria-label="{{ t.legalNav }}" style="display:flex;flex-wrap:wrap;gap:4px 16px">
+        <a href="impressum" style="display:flex;align-items:center;min-height:44px;color:var(--foreground);border-radius:6px" style-focus-visible="outline:2px solid var(--ring);outline-offset:2px">Impressum</a>
+        <a href="datenschutz" style="display:flex;align-items:center;min-height:44px;color:var(--foreground);border-radius:6px" style-focus-visible="outline:2px solid var(--ring);outline-offset:2px">Datenschutz</a>
+      </nav>
+      <div role="group" aria-label="{{ t.langLabel }}" style="display:flex;gap:2px;margin-left:auto">
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="{{ enVariant }}" size="sm" aria-pressed="{{ isEn }}" on-click="{{ setEn }}" dc-props="{{ btnIcon }}">English</x-import>
+        <x-import component-from-global-scope="SmartReceipts.Button" variant="{{ deVariant }}" size="sm" aria-pressed="{{ isDe }}" on-click="{{ setDe }}" dc-props="{{ btnIcon }}">Deutsch</x-import>
+      </div>
+    </div>
+  </footer>
+</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;hero&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;final&quot;,&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;final&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;de&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const q = new URLSearchParams(location.search || location.hash.slice(1));
+    this.state = { lang: q.get("lang") || this.props.lang || "en", dark: (q.get("theme") || this.props.theme) === "dark", w: window.innerWidth };
+  }
+  componentDidMount() {
+    if (!window.SmartReceipts) this._t = setInterval(() => { if (window.SmartReceipts) { clearInterval(this._t); this.forceUpdate(); } }, 50);
+    this._r = () => this.setState({ w: window.innerWidth });
+    window.addEventListener("resize", this._r);
+  }
+  componentWillUnmount() { clearInterval(this._t); window.removeEventListener("resize", this._r); }
+  renderVals() {
+    const S = window.SmartReceipts || {};
+    const h = React.createElement;
+    const q = new URLSearchParams(location.search || location.hash.slice(1));
+    const hero = q.get("hero") || this.props.hero || "final";
+    const de = this.state.lang === "de";
+    const w = this.state.w;
+    const sm = w < 640, md = w >= 640 && w < 1024;
+    const padX = sm ? 20 : md ? 32 : 48;
+    const T = {
+      en: {
+        login: "Log in", register: "Create account", langLabel: "Language", themeToggle: "Toggle theme", legalNav: "Legal",
+        h1: "Your receipts, read and sorted.",
+        lead: "Snap or upload a receipt. SmartReceipts reads the merchant, total, date and line items, and shows you where your money goes.",
+        heroAlt: "A printed receipt turning into structured data: merchant, total 10,27 EUR, date and line items, each marked as suggested.",
+        heroCardLabel: "Read from your receipt", suggested: "Suggested",
+        howH: "How it works", featH: "What it does", privH: "Your receipts stay yours",
+        prevH: "The app you get", prevP: "The dashboard on a laptop, the upload dialog on a phone. These are the real screens.",
+        laptopAlt: "Laptop showing the SmartReceipts dashboard: spend this month, average basket, busiest merchant, a monthly bar chart, top merchants and recent receipts.",
+        phoneAlt: "Phone showing the upload dialog: a receipt photo, merchant, amount and date marked as suggested, and a table of line items.",
+        faqH: "Questions", ctaH: "Start with your next receipt", ctaP: "Create an account and upload a receipt.", ctaLogin: "I already have an account",
+      },
+      de: {
+        login: "Anmelden", register: "Konto erstellen", langLabel: "Sprache", themeToggle: "Design wechseln", legalNav: "Rechtliches",
+        h1: "Deine Belege, gelesen und sortiert.",
+        lead: "Fotografiere einen Beleg oder lade ihn hoch. SmartReceipts liest Händler, Betrag, Datum und Positionen und zeigt dir, wohin dein Geld geht.",
+        heroAlt: "Ein gedruckter Beleg wird zu strukturierten Daten: Händler, Betrag 10,27 EUR, Datum und Positionen, jeweils als Vorschlag markiert.",
+        heroCardLabel: "Aus deinem Beleg gelesen", suggested: "Vorschlag",
+        howH: "So funktioniert es", featH: "Was es kann", privH: "Deine Belege bleiben deine",
+        prevH: "Die App, die du bekommst", prevP: "Das Dashboard am Laptop, der Upload-Dialog am Handy. Das sind die echten Screens.",
+        laptopAlt: "Laptop mit dem SmartReceipts-Dashboard: Ausgaben diesen Monat, Durchschnittsbon, häufigster Händler, Monatsdiagramm, Top-Händler und letzte Belege.",
+        phoneAlt: "Handy mit dem Upload-Dialog: ein Belegfoto, Händler, Betrag und Datum als Vorschlag markiert und eine Tabelle mit Positionen.",
+        faqH: "Fragen", ctaH: "Fang mit deinem nächsten Beleg an", ctaP: "Erstelle ein Konto und lade einen Beleg hoch.", ctaLogin: "Ich habe schon ein Konto",
+      },
+    };
+    const t = de ? T.de : T.en;
+    const steps = (de ? [
+      ["Beleg fotografieren oder hochladen", "Ein Foto vom Handy, ein iPhone-Bild im HEIC-Format oder ein PDF-E-Bon."],
+      ["Vorschläge prüfen", "Die Texterkennung schlägt Händler, Betrag, Datum und Positionen vor. Du bestätigst. Was du selbst getippt hast, wird nie überschrieben."],
+      ["Ausgaben sehen", "Das Dashboard zeigt, wie viel du ausgibst, wo und wofür."],
+    ] : [
+      ["Snap or upload a receipt", "A photo from your phone, an iPhone HEIC image or a PDF e-receipt."],
+      ["Check the suggestions", "OCR suggests the merchant, total, date and line items. You confirm. Anything you typed yourself is never overwritten."],
+      ["See your spending", "The dashboard shows how much you spend, where and on what."],
+    ]).map(([hh, p], i) => ({ n: i + 1, h: hh, p, icon: [S.Camera01Icon, S.Tick02Icon, S.ChartHistogramIcon][i] }));
+    const features = (de ? [
+      ["Texterkennung mit Markierung", "Jedes Feld ist als „Vorschlag“ oder „Nicht erkannt“ markiert. Schwer lesbare Fotos bekommen einen Hinweis. Optimiert für deutsche Belege.", null],
+      ["PDF-E-Bons", "Die Textebene wird direkt gelesen. Gescannte PDFs laufen über die Texterkennung.", null],
+      ["Dashboard", "Dieser Monat gegen den letzten, Durchschnittsbon, häufigster Händler, Ausgaben pro Monat, Top-Händler und meistgekaufte Produkte.", null],
+      ["Suchen, filtern, sortieren", "Nach Händler suchen, nach Zeitraum filtern, nach Datum oder Betrag sortieren.", null],
+      ["Einstellungen im Konto", "Zahlenformat, Standardwährung und Sprache gelten überall, wo du dich anmeldest.", ["1.234,56", "1,234.56"]],
+    ] : [
+      ["OCR with clear marking", "Every field is marked “suggested” or “not detected”. Hard-to-read photos get a warning. Tuned for German receipts for now.", null],
+      ["PDF e-receipts", "The text layer is read directly. Scanned PDFs fall back to OCR.", null],
+      ["Dashboard", "This month vs last month, average basket, busiest merchant, spend per month, top merchants and most-bought products.", null],
+      ["Search, filter, sort", "Search by merchant, filter by period, sort by date or amount.", null],
+      ["Settings follow your account", "Number format, default currency and language apply wherever you sign in.", ["1.234,56", "1,234.56"]],
+    ]).map(([hh, p, mono], i) => ({ h: hh, p, mono, icon: [S.Search01Icon, S.Pdf01Icon, S.DashboardSquare01Icon, S.FilterHorizontalIcon, S.Settings01Icon][i] }));
+    const privacy = (de ? [
+      ["Keine Standortdaten", "GPS- und EXIF-Daten werden aus Fotos entfernt, bevor sie gespeichert werden."],
+      ["Nur für dich sichtbar", "Belegbilder werden nur an dich ausgeliefert, nie über einen öffentlichen Link."],
+      ["Alles löschbar", "Du kannst dein Konto mit allen Belegen und Bildern löschen."],
+    ] : [
+      ["No location data", "GPS and EXIF data is stripped from photos before they're stored."],
+      ["Only shown to you", "Receipt images are only served to you, never by public link."],
+      ["Delete everything", "You can delete your account together with all receipts and images."],
+    ]).map(([hh, p], i) => ({ h: hh, p, icon: [S.Globe02Icon, S.ViewOffIcon, S.Delete02Icon][i] }));
+    const faq = (de ? [
+      ["Welche Belege funktionieren?", "Fotos von gedruckten Kassenbons (JPEG, PNG, WebP, HEIC) und PDF-E-Bons. Die Erkennung ist auf deutsche Belege optimiert. Bei anderen füllst du die Felder selbst aus."],
+      ["Funktionieren PDF-E-Bons?", "Ja. Hat das PDF eine Textebene, wird sie direkt gelesen. Gescannte PDFs laufen über die Texterkennung."],
+      ["Was, wenn etwas falsch erkannt wird?", "Erkannte Felder sind als Vorschlag markiert und du bestätigst sie. Was du selbst eingibst, wird nie überschrieben."],
+      ["Sind meine Daten privat?", "Standortdaten werden vor dem Speichern aus Fotos entfernt, und Belegbilder sind nur für dich abrufbar, nie über einen öffentlichen Link."],
+      ["Kann ich alles löschen?", "Ja. Unter Einstellungen → Konto löschen werden dein Konto, alle Belege und ihre Dateien dauerhaft gelöscht."],
+      ["Welche Sprachen gibt es?", "Deutsch und Englisch. Zahlenformat und Standardwährung stellst du getrennt ein."],
+    ] : [
+      ["Which receipts work?", "Photos of printed receipts (JPEG, PNG, WebP, HEIC) and PDF e-receipts. Recognition is tuned for German receipts for now. For others, you fill in the fields yourself."],
+      ["Do PDF e-receipts work?", "Yes. If the PDF has a text layer, it's read directly. Scanned PDFs fall back to OCR."],
+      ["What if something is read wrong?", "Recognised fields are marked as suggested and you confirm them. Anything you type yourself is never overwritten."],
+      ["Is my data private?", "Location data is stripped from photos before storage, and receipt images are only served to you, never by public link."],
+      ["Can I delete everything?", "Yes. Settings → Delete account permanently deletes your account, all receipts and their files."],
+      ["Which languages are there?", "English and German. Number format and default currency are set separately."],
+    ]).map(([qq, a], i) => ({ q: qq, a, open: i === 0 }));
+    const lapW = Math.min(640, w - padX * 2 - 20);
+    const phW = sm ? Math.min(240, w - padX * 2 - 20) : 240;
+    const big = sm ? { minHeight: 44, height: 44, paddingInline: 18, fontSize: 14 } : { height: 36, paddingInline: 16, fontSize: 13 };
+    return {
+      ready: !!window.SmartReceipts,
+      ic: S, t, lang: this.state.lang,
+      themeCls: this.state.dark ? "dark" : "",
+      themeIcon: this.state.dark ? S.Sun01Icon : S.Moon01Icon,
+      toggleTheme: () => this.setState((s) => ({ dark: !s.dark })),
+      setEn: () => this.setState({ lang: "en" }), setDe: () => this.setState({ lang: "de" }),
+      isEn: !de, isDe: de, enVariant: de ? "ghost" : "secondary", deVariant: de ? "secondary" : "ghost",
+      linkLogin: h("a", { href: "login" }), linkRegister: h("a", { href: "login?tab=register" }),
+      btnIcon: { style: sm ? { minWidth: 44, height: 44 } : { minWidth: 32, height: 32 } },
+      btnFlex: { style: { ...big, flex: sm ? "1 1 0" : "none" } },
+      btnHero: { style: big },
+      headerCtaWrap: sm ? "width:100%" : "",
+      padX: padX + "px",
+      heroPad: sm ? "40px" : md ? "64px" : "88px",
+      secPad: sm ? "48px" : md ? "64px" : "80px",
+      h1Size: sm ? "36px" : md ? "46px" : "58px",
+      h2Size: sm ? "24px" : "30px",
+      leadSize: sm ? "16px" : "18px",
+      heroDir: hero === "final" ? "A" : hero,
+      heroV: hero === "final" ? "landing" : "detail",
+      heroSize: sm ? 200 : w >= 1100 ? 216 : 220,
+      heroDirFlex: w >= 1100 || md ? "row" : "column",
+      arrowRot: w >= 1100 || md ? "0deg" : "90deg",
+      heroRows: [
+        { k: de ? "Händler" : "Merchant", v: de ? "Dein Markt" : "Your store", cls: "font-medium", badge: true },
+        { k: de ? "Datum" : "Date", v: "2026-09-14", cls: "font-mono", badge: true },
+        { k: de ? "Betrag" : "Total", v: "10,27 EUR", cls: "font-mono", badge: true },
+        { k: de ? "Positionen" : "Line items", v: de ? "3 Positionen" : "3 items", cls: "", badge: false },
+      ],
+      steps, features, privacy, faq,
+      lap: { w: lapW, h: Math.round(lapW * 0.62), s: lapW / 1240, base: lapW + 60 },
+      ph: { w: phW, h: Math.round(phW * 2.0), s: phW / 390 },
+    };
+  }
+}
+</script>
+
+</body></html>
