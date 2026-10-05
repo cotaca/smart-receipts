@@ -3,7 +3,14 @@ import { getRequestConfig } from "next-intl/server";
 
 import { LOCALE_COOKIE, type Language } from "@/lib/locale";
 
-const SUPPORTED: Language[] = ["de", "en"];
+import de from "../../messages/de.json";
+import en from "../../messages/en.json";
+
+// Static imports, not `import(`../../messages/${locale}.json`)`: `next dev`
+// never invalidated the template-string import, so edited catalogs kept
+// serving the old strings (raw keys, MISSING_MESSAGE) until a restart.
+const MESSAGES = { de, en };
+const SUPPORTED = Object.keys(MESSAGES) as Language[];
 
 // No cookie yet (first visit) -- guess from Accept-Language so the very
 // first render isn't always German, then fall back to the account default.
@@ -26,6 +33,6 @@ export default getRequestConfig(async () => {
 
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    messages: MESSAGES[locale],
   };
 });
