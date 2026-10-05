@@ -13,7 +13,7 @@ that motivated them.
 | [Image preprocessing](.claude/rules/backend/image-processing.md) | pipeline order, always JPEG, EXIF stripped, pixel guard |
 | [OCR](.claude/rules/backend/ocr.md) | PSM 6, keyword and regex traps, confidence filter, benchmark; why other receipt languages aren't built yet |
 | [Backend tests](.claude/rules/backend/testing.md) | fixtures, test DB |
-| [App shell & API client](.claude/rules/frontend/shell-auth.md) | single auth guard, route group, `MeContext`, `apiFetch` |
+| [App shell & API client](.claude/rules/frontend/shell-auth.md) | single auth guard, route group, `MeContext`, `apiFetch`, mobile bottom nav |
 | [UI conventions](.claude/rules/frontend/ui.md) | design reference, Base UI specifics, `Select` traps, jsdom limits |
 | [Receipt dialog](.claude/rules/frontend/receipt-dialog.md) | OCR review flow, replace image, zoom/pan, date picker, detail view |
 | [Receipts list](.claude/rules/frontend/receipts-list.md) | client-side filters, filter URL, month groups, mobile filter sheet, ref-counted image cache, hover preview, detail via `?receipt=` |

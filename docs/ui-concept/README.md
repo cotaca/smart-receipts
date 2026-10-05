@@ -21,17 +21,14 @@ Landing-Page ist ein verschachteltes Bundle mit eigenem Manifest) und diese Date
 |---|---|---|
 | Logo | v2 01, final | gebaut: `LogoMark` in Sidebar und Login, Favicon, Apple-Touch-Icon. Hero-Bon der Landing fehlt noch |
 | Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05)) |
-| Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | gebaut: Suche über Händler/Positionen/Notizen, Zeitraum inkl. Custom range, Betrag, Dateityp, Chips, Monatsgruppen, URL-Filter, Filter-Sheet am Handy. Offen: Karten-Zeilen am Handy, Bottom-Nav |
-| Mobile Bottom-Nav | v2 03, im Review | Sidebar als Offcanvas-Sheet |
+| Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | gebaut: Suche über Händler/Positionen/Notizen, Zeitraum inkl. Custom range, Betrag, Dateityp, Chips, Monatsgruppen, URL-Filter, Filter-Sheet am Handy. Offen: Karten-Zeilen am Handy |
+| Mobile Bottom-Nav | v2 03, im Review | gebaut: Top-Bar (Logo, Avatar-Menü), Bottom-Nav mit 3 Einträgen, Upload als Floating Button (siehe Entscheidung 5) |
 | Registrierung mit Inline-Validierung | v2 03, im Review | Fehler nur vom Server, oben als Alert |
 | Dashboard | v2-Datei = gebauter Stand | gebaut |
 | Upload-/Bearbeiten-Dialog | v2 `Screen-ReceiptForm` = gebauter Stand | gebaut |
 | Login, Detail, Löschen, Settings | v1 | gebaut |
 
 ### Was v2 an schon gebauten Screens ändert
-- **Bottom-Nav unter `md`** betrifft jede App-Seite (Dashboard, Settings, Liste), nicht
-  nur die Liste: `app-shell.tsx` blendet Sidebar und `SidebarTrigger` unten aus, Konto
-  (Theme, Sign out) wandert in ein Avatar-Menü in der Top-Bar.
 - **Login-Seite**: Tab „Create account" bekommt die Phase-3-Validierung und soll per
   `?tab=register` direkt öffnen (Ziel der Landing-CTAs).
 - **Meta**: `og-image.png` (1200×630) und der Meta-Block aus Board 2c kommen mit der
@@ -91,9 +88,10 @@ die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
 3. **`/impressum` und `/datenschutz` als einfache Server-Seiten mit Platzhaltern.** Den
    Text liefert der Betreiber; die Landing geht erst live, wenn er drin ist.
 4. *(gebaut: Passwortregeln in `NewPassword`, siehe `.claude/rules/backend/auth.md`)*
-5. **Bottom-Nav statt Sidebar-Sheet unter `md`**, wie im Board (Dashboard, Receipts,
-   Upload, Settings; Konto per Avatar-Menü in der Top-Bar). Ersetzt beim Bau die
-   Shell-Regel in `.claude/rules/frontend/shell-auth.md`.
+5. *(gebaut, siehe `.claude/rules/frontend/shell-auth.md`)* **Bottom-Nav statt
+   Sidebar-Sheet unter `md`** (Dashboard, Receipts, Settings; Konto per Avatar-Menü in
+   der Top-Bar). Abweichung vom Board: Upload ist ein Floating Button rechts über der
+   Nav (öffnet `/?upload=1`), kein vierter Nav-Eintrag.
 6. *(gebaut: Listenfilter in der URL, siehe `.claude/rules/frontend/receipts-list.md`)*
 7. *(gebaut: `size="touch"`, siehe `.claude/rules/frontend/ui.md`)*
 8. **FAQ als natives `details/summary`**, kein Accordion.
@@ -129,7 +127,7 @@ Durchschnittsbon, häufigster Händler), Tabs (Monthly / Quarterly), Chart (Spen
 per month, Recharts), Progress (Top-Merchant-Balken), Table (Most-bought
 products), Separator, Badge, Select (Zeitraum „Last 12 months"). Mobile: Bottom-Nav
 als eigenes Layout + Sheet für das Menü.
-Der Mobile-Bottom-Nav des Mockups ist nicht gebaut; die Sidebar der Shell reicht.
+Die Mobile-Bottom-Nav ist app-weit gebaut (Entscheidung 5).
 Siehe `.claude/rules/dashboard.md`.
 
 ### `Screen-ReceiptsToday` — Liste im heutigen Umfang

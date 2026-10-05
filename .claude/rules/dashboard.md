@@ -20,5 +20,5 @@ paths:
 - `today` is captured once when the page mounts: a tab left open across midnight shows a stale "this month" until reload. Accepted.
 - The change vs last month is hidden when last month is <= 0 (amounts can be negative, a percentage would mislead).
 - The chart has `role="img"` plus a label and an sr-only list of period and amount; the merchant `Progress` bars are `aria-hidden` (count and amount sit beside them as text).
-- Month labels use `number_format`, not the UI language (see settings-i18n). The mobile bottom nav is not built; the v2 design makes it app-wide (decision 5 in `docs/ui-concept/README.md`).
+- Month labels use `number_format`, not the UI language (see settings-i18n). The mobile bottom nav is built app-wide (`.claude/rules/frontend/shell-auth.md`). The empty state's "Upload receipt" links `/?upload=1`, which opens the list's upload dialog directly.
 - jsdom has no layout, so the Recharts bars are not asserted; bar colours and responsiveness are manual checks.
