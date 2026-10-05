@@ -1,10 +1,12 @@
 import { render, screen, waitFor, within } from "@/test/render";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "@/lib/api";
 import type { Me, ReceiptExtraction, ReceiptPublic } from "@/lib/api";
 import { MeProvider } from "@/lib/me-context";
+import enMessages from "../../../messages/en.json";
 
 import ReceiptsPage from "./page";
 
@@ -63,6 +65,10 @@ function receipt(overrides: Partial<ReceiptPublic>): ReceiptPublic {
 }
 
 const RECEIPT = receipt({});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(() => {
   vi.spyOn(api, "getReceiptImageObjectUrl").mockResolvedValue("blob:fake-url");
@@ -128,7 +134,8 @@ describe("ReceiptsPage", () => {
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
     const row = screen.getByRole("row", { name: /Trader Joe's/ });
-    expect(within(row).getByText("2024-01-15")).toBeInTheDocument();
+    // Twice: the date column (sm+) and the line under the merchant (mobile).
+    expect(within(row).getAllByText("2024-01-15")).toHaveLength(2);
     expect(within(row).getByText("12,34 EUR")).toBeInTheDocument();
   });
 
@@ -171,7 +178,10 @@ describe("ReceiptsPage", () => {
       expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
     );
 
-    await user.type(screen.getByPlaceholderText("Search receipts…"), "trader");
+    await user.type(
+      screen.getByPlaceholderText("Search merchants, items, notes…"),
+      "trader",
+    );
 
     expect(screen.getByText("Trader Joe's")).toBeInTheDocument();
     expect(screen.queryByText("dm-drogerie markt")).not.toBeInTheDocument();
@@ -199,13 +209,11 @@ describe("ReceiptsPage", () => {
     // Default is "all" — nothing hidden until a period is chosen.
     expect(screen.getByText("Old Shop")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("combobox", { name: "Period" }));
-    await user.click(await screen.findByRole("option", { name: "This month" }));
+    await user.click(screen.getByRole("button", { name: "Period: All time" }));
+    await user.click(await screen.findByRole("button", { name: "This month" }));
 
     expect(screen.getByText("This Month Shop")).toBeInTheDocument();
     expect(screen.queryByText("Old Shop")).not.toBeInTheDocument();
-
-    vi.useRealTimers();
   });
 
   // Regression test: without `items` on Select, Base UI's SelectValue renders
@@ -217,15 +225,23 @@ describe("ReceiptsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    const period = screen.getByRole("combobox", { name: "Period" });
+    const period = screen.getByRole("button", { name: "Period: All time" });
     const sort = screen.getByRole("combobox", { name: "Sort order" });
-    expect(period).toHaveTextContent("All time");
-    expect(sort).toHaveTextContent("Sort: Newest");
+    // The StableLabel holds every label in textContent, so assert the raw
+    // value is absent and read the visible (non-aria-hidden) span.
+    expect(sort).not.toHaveTextContent("newest");
+    expect(
+      sort.querySelector("span.inline-grid > span:not([aria-hidden])"),
+    ).toHaveTextContent("Sort: Newest");
 
     await user.click(period);
-    await user.click(await screen.findByRole("option", { name: "This month" }));
+    const preset = await screen.findByRole("button", { name: "This month" });
+    expect(preset).toHaveAttribute("aria-pressed", "false");
+    await user.click(preset);
 
-    expect(period).toHaveTextContent("This month");
+    expect(
+      screen.getByRole("button", { name: "Period: This month" }),
+    ).toBeInTheDocument();
     expect(period).not.toHaveTextContent("this-month");
   });
 
@@ -256,6 +272,436 @@ describe("ReceiptsPage", () => {
     const rows = screen.getAllByRole("row").slice(1); // drop header row
     expect(within(rows[0]).getByText("Pricey Shop")).toBeInTheDocument();
     expect(within(rows[1]).getByText("Cheap Shop")).toBeInTheDocument();
+  });
+
+  describe("filters", () => {
+    const SEARCH = "Search merchants, items, notes…";
+    const milk = receipt({
+      id: "milk",
+      merchant: "Rewe",
+      purchased_at: "2026-09-10",
+      amount: "20.00",
+      items: [
+        {
+          description: "Milch 1l",
+          quantity: "1",
+          unit_price: "1.00",
+          total_price: "1.00",
+        },
+      ],
+    });
+    const pdf = receipt({
+      id: "pdf",
+      merchant: "Telekom",
+      content_type: "application/pdf",
+      purchased_at: "2026-08-05",
+      amount: "40.00",
+    });
+    const usd = receipt({
+      id: "usd",
+      merchant: "Dollar Shop",
+      currency: "USD",
+      purchased_at: "2026-08-01",
+      amount: "30.00",
+    });
+
+    async function renderLoaded(...list: ReceiptPublic[]) {
+      vi.spyOn(api, "listReceipts").mockResolvedValue(list);
+      renderPage();
+      await waitFor(() =>
+        expect(screen.getAllByText(list[0].merchant).length).toBeGreaterThan(0),
+      );
+    }
+
+    it("finds a receipt by line item and shows the hit", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.type(screen.getByPlaceholderText(SEARCH), "milch");
+
+      const row = screen.getByRole("row", { name: /Rewe/ });
+      expect(within(row).getByText(/Line item: Milch 1l/)).toBeInTheDocument();
+      expect(screen.queryByText("Telekom")).not.toBeInTheDocument();
+    });
+
+    it("filters by file type", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.click(screen.getByRole("combobox", { name: "File type" }));
+      await user.click(await screen.findByRole("option", { name: "PDFs" }));
+
+      expect(screen.getByText("Telekom")).toBeInTheDocument();
+      expect(screen.queryByText("Rewe")).not.toBeInTheDocument();
+    });
+
+    it("applies an amount range in the default currency and shows a chip", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf, usd);
+
+      await user.click(screen.getByRole("button", { name: "Amount" }));
+      await user.type(screen.getByLabelText("Min"), "10");
+      await user.type(screen.getByLabelText("Max"), "25,50");
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+
+      expect(screen.getByText("Rewe")).toBeInTheDocument();
+      expect(screen.queryByText("Telekom")).not.toBeInTheDocument();
+      expect(screen.queryByText("Dollar Shop")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Remove filter 10,00–25,50 EUR",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("removes a chip and clears all filters", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.type(screen.getByPlaceholderText(SEARCH), "rewe");
+      await user.click(screen.getByRole("combobox", { name: "File type" }));
+      await user.click(await screen.findByRole("option", { name: "Photos" }));
+      expect(screen.getByText(/1 of 2 receipts/)).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole("button", { name: "Remove filter Photos" }),
+      );
+      expect(screen.getByText(/1 of 2 receipts/)).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Remove filter Photos" }),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Clear all" }));
+      expect(screen.getByText("Telekom")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(SEARCH)).toHaveValue("");
+    });
+
+    it("offers to clear filters when nothing matches", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk);
+
+      await user.type(screen.getByPlaceholderText(SEARCH), "zzz");
+      expect(
+        screen.getByText("No receipts match your filters"),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Clear filters" }));
+      expect(screen.getByText("Rewe")).toBeInTheDocument();
+    });
+
+    it("groups by month with a total when sorted by date only", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      expect(screen.getByText(/^September 2026/)).toBeInTheDocument();
+      expect(screen.getByText(/^August 2026/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/20,00 EUR/, { selector: "span" }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("combobox", { name: "Sort order" }));
+      await user.click(
+        await screen.findByRole("option", { name: /Amount \(high to low\)/ }),
+      );
+      expect(screen.queryByText(/^September 2026/)).not.toBeInTheDocument();
+    });
+
+    it("reads the initial filters from the URL", async () => {
+      window.history.replaceState(null, "", "/?q=rewe&type=image");
+      await renderLoaded(milk, pdf);
+
+      expect(screen.getByPlaceholderText(SEARCH)).toHaveValue("rewe");
+      expect(
+        screen.getByRole("button", { name: "Remove filter Photos" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Telekom")).not.toBeInTheDocument();
+      // Still in the URL after the mirror effect ran.
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get("q")).toBe("rewe");
+      expect(params.get("type")).toBe("image");
+    });
+
+    it("mirrors filters into the URL and keeps ?receipt=", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.type(screen.getByPlaceholderText(SEARCH), "rewe");
+      await user.click(screen.getByRole("row", { name: /Rewe/ }));
+
+      await waitFor(() => {
+        const params = new URLSearchParams(window.location.search);
+        expect(params.get("q")).toBe("rewe");
+        expect(params.get("receipt")).toBe("milk");
+      });
+    });
+
+    it("re-reads the filters when an outside navigation changes the URL", async () => {
+      window.history.replaceState(null, "", "/?type=pdf");
+      vi.spyOn(api, "listReceipts").mockResolvedValue([milk, pdf]);
+      const { rerender } = renderPage();
+      await waitFor(() =>
+        expect(screen.getByText("Telekom")).toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole("button", { name: "Remove filter PDFs" }),
+      ).toBeInTheDocument();
+
+      // e.g. the sidebar's "Receipts" link: searchParams change, no remount.
+      navSearch = "";
+      rerender(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <MeProvider me={ME} setMe={vi.fn()}>
+            <ReceiptsPage />
+          </MeProvider>
+        </NextIntlClientProvider>,
+      );
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("button", { name: "Remove filter PDFs" }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(screen.getByText("Rewe")).toBeInTheDocument();
+    });
+
+    describe("mobile sheet", () => {
+      async function openSheet(user: ReturnType<typeof userEvent.setup>) {
+        await user.click(screen.getByRole("button", { name: /^Filters/ }));
+        return within(await screen.findByRole("dialog"));
+      }
+
+      it("applies nothing when closed without Show", async () => {
+        const user = userEvent.setup();
+        await renderLoaded(milk, pdf);
+
+        const sheet = await openSheet(user);
+        await user.click(sheet.getByRole("tab", { name: "PDFs" }));
+        await user.keyboard("{Escape}");
+
+        await waitFor(() =>
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+        );
+        expect(screen.getByText("Rewe")).toBeInTheDocument();
+        expect(screen.getByText("Telekom")).toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: "Remove filter PDFs" }),
+        ).not.toBeInTheDocument();
+      });
+
+      it("shows the draft's count and applies it on Show", async () => {
+        const user = userEvent.setup();
+        await renderLoaded(milk, pdf);
+
+        const sheet = await openSheet(user);
+        expect(
+          sheet.getByRole("button", { name: "Show 2 receipts" }),
+        ).toBeInTheDocument();
+        await user.click(sheet.getByRole("tab", { name: "PDFs" }));
+        await user.click(sheet.getByRole("button", { name: "Show 1 receipt" }));
+
+        await waitFor(() =>
+          expect(screen.queryByText("Rewe")).not.toBeInTheDocument(),
+        );
+        expect(screen.getByText("Telekom")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: "Filters, 1 active" }),
+        ).toBeInTheDocument();
+      });
+
+      it("disables Show while an amount is invalid", async () => {
+        const user = userEvent.setup();
+        await renderLoaded(milk, pdf);
+
+        const sheet = await openSheet(user);
+        await user.type(sheet.getByLabelText("Min"), "abc");
+
+        expect(sheet.getByRole("button", { name: /^Show/ })).toBeDisabled();
+        expect(sheet.getByLabelText("Min")).toHaveAttribute(
+          "aria-invalid",
+          "true",
+        );
+        expect(sheet.getByLabelText("Max")).not.toHaveAttribute("aria-invalid");
+        expect(sheet.getByLabelText("Min")).toHaveAccessibleDescription(
+          "Enter a valid amount.",
+        );
+      });
+
+      it("resets the draft but keeps search and sort", async () => {
+        const user = userEvent.setup();
+        await renderLoaded(milk, pdf);
+
+        let sheet = await openSheet(user);
+        await user.click(sheet.getByRole("tab", { name: "PDFs" }));
+        await user.click(sheet.getByRole("button", { name: /^Show/ }));
+        await waitFor(() =>
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+        );
+
+        sheet = await openSheet(user);
+        await user.click(sheet.getByRole("button", { name: "Reset" }));
+        await user.click(sheet.getByRole("button", { name: /^Show/ }));
+
+        await waitFor(() =>
+          expect(screen.getByText("Rewe")).toBeInTheDocument(),
+        );
+        expect(
+          screen.queryByRole("button", { name: "Remove filter PDFs" }),
+        ).not.toBeInTheDocument();
+      });
+
+      it("keeps a custom period after Show", async () => {
+        const user = userEvent.setup();
+        window.history.replaceState(
+          null,
+          "",
+          "/?period=custom&from=2026-09-01&to=2026-09-30",
+        );
+        await renderLoaded(milk, pdf);
+
+        const sheet = await openSheet(user);
+        await user.click(sheet.getByRole("tab", { name: "Photos" }));
+        await user.click(sheet.getByRole("button", { name: /^Show/ }));
+
+        await waitFor(() =>
+          expect(
+            screen.getByRole("button", { name: "Remove filter Photos" }),
+          ).toBeInTheDocument(),
+        );
+        expect(
+          screen.getByRole("button", {
+            name: "Remove filter 01.09.2026 – 30.09.2026",
+          }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("moves focus into the period popover when it opens", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.click(screen.getByRole("button", { name: /^Period/ }));
+
+      const popup = await screen.findByRole("dialog");
+      await waitFor(() =>
+        expect(popup).toContainElement(document.activeElement as HTMLElement),
+      );
+      expect(document.activeElement).not.toBe(
+        screen.getByRole("button", { name: /^Period/ }),
+      );
+    });
+
+    it("sets a custom range from the calendar and closes the popover", async () => {
+      vi.setSystemTime(new Date("2026-09-19T12:00:00Z"));
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.click(screen.getByRole("button", { name: /^Period/ }));
+      const popup = within(await screen.findByRole("dialog"));
+      await user.click(popup.getByRole("button", { name: /September 1st/ }));
+      await user.click(popup.getByRole("button", { name: /September 10th/ }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole("button", { name: "Period: Custom range" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Remove filter 01.09.2026 – 10.09.2026",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps the applied range while a new one is half-picked", async () => {
+      vi.setSystemTime(new Date("2026-09-19T12:00:00Z"));
+      window.history.replaceState(
+        null,
+        "",
+        "/?period=custom&from=2026-09-01&to=2026-09-10",
+      );
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.click(screen.getByRole("button", { name: /^Period/ }));
+      const popup = within(await screen.findByRole("dialog"));
+      await user.click(popup.getByRole("button", { name: /September 15th/ }));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Remove filter 01.09.2026 – 10.09.2026",
+        }),
+      ).toBeInTheDocument();
+      expect(window.location.search).toContain("to=2026-09-10");
+    });
+
+    it("picks a single-day range with two clicks on the same day", async () => {
+      vi.setSystemTime(new Date("2026-09-19T12:00:00Z"));
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      await user.click(screen.getByRole("button", { name: /^Period/ }));
+      const popup = within(await screen.findByRole("dialog"));
+      await user.click(popup.getByRole("button", { name: /September 1st/ }));
+      await user.click(popup.getByRole("button", { name: /September 1st/ }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole("button", {
+          name: "Remove filter 01.09.2026 – 01.09.2026",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps the amount button label and flags it when active", async () => {
+      const user = userEvent.setup();
+      await renderLoaded(milk, pdf);
+
+      expect(screen.getByRole("button", { name: "Amount" })).toHaveTextContent(
+        "Amount",
+      );
+      await user.click(screen.getByRole("button", { name: "Amount" }));
+      await user.type(screen.getByLabelText("Min"), "10");
+      await user.click(screen.getByRole("button", { name: "Apply" }));
+
+      const active = screen.getByRole("button", { name: "Amount, active" });
+      expect(active).toHaveTextContent("Amount");
+      expect(active).not.toHaveTextContent("10,00");
+    });
+
+    it("shows no count while loading or when the account has no receipts", async () => {
+      vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+      renderPage();
+
+      expect(screen.queryByText(/^d+ receipts?$/)).not.toBeInTheDocument();
+      await screen.findByText("No receipts yet");
+      expect(screen.queryByText("0 receipts")).not.toBeInTheDocument();
+    });
+
+    it("shows the plain total without filters", async () => {
+      await renderLoaded(milk, pdf);
+
+      expect(screen.getByText("2 receipts")).toBeInTheDocument();
+    });
+
+    it("shows a custom range chip from the URL", async () => {
+      window.history.replaceState(
+        null,
+        "",
+        "/?period=custom&from=2026-09-01&to=2026-09-30",
+      );
+      await renderLoaded(milk, pdf);
+
+      expect(
+        screen.getByRole("button", {
+          name: "Remove filter 01.09.2026 – 30.09.2026",
+        }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Telekom")).not.toBeInTheDocument();
+    });
   });
 
   it("creates a receipt and adds it to the list", async () => {

@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  FilterIcon,
   Invoice01Icon,
-  Search01Icon,
   Upload04Icon,
 } from "@hugeicons/core-free-icons";
 
@@ -29,71 +29,25 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReceiptDetailDialog } from "@/components/receipts/receipt-detail-dialog";
 import { ReceiptFormDialog } from "@/components/receipts/receipt-form-dialog";
 import { isPdf, ReceiptImage } from "@/components/receipts/receipt-image";
+import { ReceiptFilters } from "@/components/receipts/receipt-filters";
 import { ReceiptsTable } from "@/components/receipts/receipts-table";
 import { deleteReceipt, listReceipts, type ReceiptPublic } from "@/lib/api";
 import { useMe } from "@/lib/me-context";
+import {
+  DEFAULT_FILTERS,
+  filtersToParams,
+  groupByMonth,
+  matchReceipt,
+  parseFilters,
+  sortReceipts,
+  sumAmounts,
+  type Filters,
+} from "@/lib/receipt-filters";
 import { formatAmount } from "@/lib/utils";
-
-type PeriodFilter = "all" | "this-month" | "last-3-months" | "this-year";
-type SortOrder = "newest" | "oldest" | "amount-desc" | "amount-asc";
-
-function matchesPeriod(purchasedAt: string, period: PeriodFilter): boolean {
-  if (period === "all") return true;
-
-  const date = new Date(purchasedAt);
-  const now = new Date();
-
-  if (period === "this-month") {
-    return (
-      date.getFullYear() === now.getFullYear() &&
-      date.getMonth() === now.getMonth()
-    );
-  }
-  if (period === "this-year") {
-    return date.getFullYear() === now.getFullYear();
-  }
-  // last-3-months: this month plus the two before it
-  const cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  return date >= cutoff;
-}
-
-function sortReceipts(
-  receipts: ReceiptPublic[],
-  sort: SortOrder,
-): ReceiptPublic[] {
-  const sorted = [...receipts];
-  switch (sort) {
-    case "oldest":
-      return sorted.sort((a, b) =>
-        a.purchased_at.localeCompare(b.purchased_at),
-      );
-    case "amount-desc":
-      return sorted.sort((a, b) => Number(b.amount) - Number(a.amount));
-    case "amount-asc":
-      return sorted.sort((a, b) => Number(a.amount) - Number(b.amount));
-    case "newest":
-    default:
-      return sorted.sort((a, b) =>
-        b.purchased_at.localeCompare(a.purchased_at),
-      );
-  }
-}
 
 // useSearchParams needs a Suspense boundary or `next build` fails to prerender.
 export default function ReceiptsPage() {
@@ -110,26 +64,6 @@ function ReceiptsPageContent() {
   const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
   const [listError, setListError] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState<PeriodFilter>("all");
-  const [sort, setSort] = useState<SortOrder>("newest");
-
-  // Passed to Select as `items` as well as mapped into the SelectItems:
-  // without `items`, Base UI's SelectValue falls back to rendering the raw
-  // value ("this-month", "amount-desc") in the trigger instead of the label.
-  const periodOptions: { value: PeriodFilter; label: string }[] = [
-    { value: "all", label: t("periodAll") },
-    { value: "this-month", label: t("periodThisMonth") },
-    { value: "last-3-months", label: t("periodLast3Months") },
-    { value: "this-year", label: t("periodThisYear") },
-  ];
-  const sortOptions: { value: SortOrder; label: string }[] = [
-    { value: "newest", label: t("sortNewest") },
-    { value: "oldest", label: t("sortOldest") },
-    { value: "amount-desc", label: t("sortAmountDesc") },
-    { value: "amount-asc", label: t("sortAmountAsc") },
-  ];
-
   const [formOpen, setFormOpen] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<
     ReceiptPublic | undefined
@@ -144,10 +78,30 @@ function ReceiptsPageContent() {
   // then window.location is not updated yet (the router's params are). Later
   // changes are mirrored out by the effect below, never read back in.
   const searchParams = useSearchParams();
+  // Filters follow the same pattern as `?receipt=`: read once here, mirrored
+  // out by the effect below.
+  const [filters, setFilters] = useState<Filters>(() =>
+    parseFilters(new URLSearchParams(searchParams.toString())),
+  );
+  // Captured once, like the dashboard: a tab left open across midnight keeps
+  // yesterday's "this month" until reload. Accepted.
+  const [today] = useState(() => new Date());
   const [detailId, setDetailId] = useState<string | null>(() =>
     searchParams.get("receipt"),
   );
 
+  // The last query this page wrote (or started with). When searchParams
+  // differ from it, something else navigated here (sidebar "Receipts" link,
+  // a dashboard link to "/") without remounting: re-read filters and detail.
+  const lastQuery = useRef(searchParams.toString());
+  const query = searchParams.toString();
+  useEffect(() => {
+    if (query === lastQuery.current) return;
+    lastQuery.current = query;
+    const params = new URLSearchParams(query);
+    setFilters(parseFilters(params));
+    setDetailId(params.get("receipt"));
+  }, [query]);
   useEffect(() => {
     let cancelled = false;
 
@@ -167,54 +121,75 @@ function ReceiptsPageContent() {
   // Client-side only — GET /receipts has no query params. The account's
   // receipt count is small enough that filtering the already-loaded list is
   // simpler than round-tripping to the backend for every keystroke.
-  const visibleReceipts = useMemo(() => {
-    if (!receipts) return null;
-    const needle = search.trim().toLowerCase();
-    const filtered = receipts.filter(
-      (r) =>
-        r.merchant.toLowerCase().includes(needle) &&
-        matchesPeriod(r.purchased_at, period),
-    );
-    return sortReceipts(filtered, sort);
-  }, [receipts, search, period, sort]);
+  const { visibleReceipts, itemHits } = useMemo(() => {
+    if (!receipts) return { visibleReceipts: null, itemHits: new Map() };
+    const hits = new Map<string, string>();
+    const filtered = receipts.filter((r) => {
+      const { match, itemHit } = matchReceipt(
+        r,
+        filters,
+        me.default_currency,
+        today,
+      );
+      if (itemHit) hits.set(r.id, itemHit);
+      return match;
+    });
+    return {
+      visibleReceipts: sortReceipts(filtered, filters.sort),
+      itemHits: hits,
+    };
+  }, [receipts, filters, me.default_currency, today]);
+
+  // Month sections only make sense when sorted by date.
+  const groups = useMemo(
+    () =>
+      visibleReceipts &&
+      (filters.sort === "newest" || filters.sort === "oldest")
+        ? groupByMonth(visibleReceipts)
+        : undefined,
+    [visibleReceipts, filters.sort],
+  );
+
+  const visibleSum = visibleReceipts ? sumAmounts(visibleReceipts) : null;
 
   // Account-wide total, independent of the active filters — only shown when
   // every receipt shares a currency, so mixed currencies never get summed
   // into a meaningless number.
-  // Display only: Number()/toFixed() is fine for rendering, but unlike the
-  // backend's Decimal this is float math — never feed `total` back into a
+  // Display only: cent-integer sum, but never feed `total` back into a
   // calculation.
   const summary = useMemo(() => {
     if (!receipts || receipts.length === 0) return null;
-    const currency = receipts[0].currency;
-    if (receipts.some((r) => r.currency !== currency)) return null;
-    const total = receipts.reduce((sum, r) => sum + Number(r.amount), 0);
-    return { count: receipts.length, total: total.toFixed(2), currency };
+    const total = sumAmounts(receipts);
+    if (total === null) return null;
+    return { count: receipts.length, total, currency: receipts[0].currency };
   }, [receipts]);
 
   // Derived, not stored separately -- an edit or a delete that changes
   // `receipts` updates or closes the detail dialog automatically.
   const detailReceipt = receipts?.find((r) => r.id === detailId) ?? null;
 
-  // Mirrors the open detail into the URL so a reload or a shared link
-  // reopens it. Skipped while receipts hasn't loaded yet, so the initial
+  // Mirrors the filters and the open detail into the URL so a reload or a
+  // shared link restores them (one effect, one replaceState, so neither
+  // overwrites the other's params). Skipped while receipts hasn't loaded yet, so the initial
   // `?receipt=<id>` read above survives long enough for `detailReceipt` to
   // resolve instead of being stripped as "unknown".
   useEffect(() => {
     if (receipts === null) return;
 
     const params = new URLSearchParams(window.location.search);
+    filtersToParams(filters, params);
     if (detailReceipt) {
       params.set("receipt", detailReceipt.id);
     } else {
       params.delete("receipt");
     }
-    const query = params.toString();
-    const url = query
-      ? `${window.location.pathname}?${query}`
+    const next = params.toString();
+    lastQuery.current = next;
+    const url = next
+      ? `${window.location.pathname}?${next}`
       : window.location.pathname;
     window.history.replaceState(null, "", url);
-  }, [receipts, detailId, detailReceipt]);
+  }, [receipts, filters, detailId, detailReceipt]);
 
   function openCreateDialog() {
     setEditingReceipt(undefined);
@@ -274,63 +249,22 @@ function ReceiptsPageContent() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2">
-        <InputGroup className="max-w-65 flex-1">
-          <InputGroupAddon>
-            <HugeiconsIcon icon={Search01Icon} />
-          </InputGroupAddon>
-          <InputGroupInput
-            placeholder={t("searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </InputGroup>
-        <Select
-          items={periodOptions}
-          value={period}
-          onValueChange={(value) => setPeriod((value as PeriodFilter) ?? "all")}
-        >
-          {/* aria-label: the trigger's visible text is the selected value, so
-              without this the control has no name of its own telling you what
-              it filters — don't remove as "redundant". */}
-          <SelectTrigger size="sm" aria-label={t("periodAriaLabel")}>
-            <SelectValue />
-          </SelectTrigger>
-          {/* SelectContent defaults to w-(--anchor-width), i.e. exactly the
-              trigger's width — and the trigger is w-fit, so it's sized to the
-              *selected* label. Any longer option then gets clipped. Keep that
-              width as the floor, let the popup grow past it. */}
-          <SelectContent className="w-auto min-w-(--anchor-width)">
-            {periodOptions.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          items={sortOptions}
-          value={sort}
-          onValueChange={(value) => setSort((value as SortOrder) ?? "newest")}
-        >
-          {/* aria-label: same reason as the Period select above. */}
-          <SelectTrigger
-            size="sm"
-            className="ml-auto"
-            aria-label={t("sortAriaLabel")}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          {/* Same clipping fix as the Period select above. */}
-          <SelectContent className="w-auto min-w-(--anchor-width)">
-            {sortOptions.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <ReceiptFilters
+        filters={filters}
+        onChange={setFilters}
+        resultCount={visibleReceipts?.length ?? 0}
+        resultSum={
+          visibleSum
+            ? `${formatAmount(visibleSum, me.number_format)} ${visibleReceipts![0].currency}`
+            : null
+        }
+        totalCount={receipts ? receipts.length : null}
+        countFor={(f) =>
+          (receipts ?? []).filter(
+            (r) => matchReceipt(r, f, me.default_currency, today).match,
+          ).length
+        }
+      />
 
       {listError ? (
         <p className="text-sm text-destructive">{t("loadError")}</p>
@@ -357,10 +291,30 @@ function ReceiptsPageContent() {
           </EmptyContent>
         </Empty>
       ) : visibleReceipts && visibleReceipts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("noMatches")}</p>
+        <Empty className="flex-1 border border-dashed border-border bg-muted">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <HugeiconsIcon icon={FilterIcon} />
+            </EmptyMedia>
+            <EmptyTitle>{t("noMatchesTitle")}</EmptyTitle>
+            <EmptyDescription>{t("noMatchesDescription")}</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setFilters({ ...DEFAULT_FILTERS, sort: filters.sort })
+              }
+            >
+              {t("clearFilters")}
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : (
         <ReceiptsTable
           receipts={visibleReceipts ?? []}
+          groups={groups}
+          itemHits={itemHits}
           onOpen={(r) => setDetailId(r.id)}
         />
       )}
