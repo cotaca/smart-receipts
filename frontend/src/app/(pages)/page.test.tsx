@@ -1060,6 +1060,99 @@ describe("ReceiptsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens the upload dialog on mount from ?upload=1 and strips it from the URL", async () => {
+    window.history.replaceState(null, "", "/?upload=1&q=rewe");
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("dialog", { name: "Upload receipt" }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe("?q=rewe"));
+  });
+
+  it("opens the upload dialog when an outside navigation adds ?upload=1, keeping filters", async () => {
+    window.history.replaceState(null, "", "/?q=trader");
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+    const { rerender } = renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Trader Joe's")).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    navSearch = "q=trader&upload=1";
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MeProvider me={ME} setMe={vi.fn()}>
+          <ReceiptsPage />
+        </MeProvider>
+      </NextIntlClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Upload receipt" }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe("?q=trader"));
+    expect(screen.getAllByDisplayValue("trader").length).toBeGreaterThan(0);
+  });
+
+  it("consumes ?upload=1 even when the list never loads, so a second tap reopens the dialog", async () => {
+    window.history.replaceState(null, "", "/?upload=1");
+    vi.spyOn(api, "listReceipts").mockRejectedValue(new Error("down"));
+    const user = userEvent.setup();
+    const { rerender } = renderPage();
+
+    await screen.findByRole("dialog", { name: "Upload receipt" });
+    await waitFor(() => expect(window.location.search).toBe(""));
+    await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    // The router's params drop upload (replaceState), then the FAB pushes it again.
+    navSearch = "";
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MeProvider me={ME} setMe={vi.fn()}>
+          <ReceiptsPage />
+        </MeProvider>
+      </NextIntlClientProvider>,
+    );
+    navSearch = "upload=1";
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MeProvider me={ME} setMe={vi.fn()}>
+          <ReceiptsPage />
+        </MeProvider>
+      </NextIntlClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Upload receipt" }),
+    ).toBeInTheDocument();
+  });
+
+  // The class is the behavior (jsdom applies no CSS): the floating upload
+  // button replaces the header button below md; the empty state keeps its own.
+  it("hides only the header upload button below md", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
+    renderPage();
+    await screen.findByText("Trader Joe's");
+    expect(screen.getByRole("button", { name: "Upload receipt" })).toHaveClass(
+      "max-md:hidden",
+    );
+  });
+
+  it("keeps the empty-state upload button visible below md", async () => {
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+    renderPage();
+    const first = await screen.findByRole("button", {
+      name: "Upload your first receipt",
+    });
+    expect(first).not.toHaveClass("max-md:hidden");
+  });
+
   it("does not open a dialog and strips an unknown ?receipt= id", async () => {
     window.history.replaceState(null, "", "/?receipt=does-not-exist");
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);

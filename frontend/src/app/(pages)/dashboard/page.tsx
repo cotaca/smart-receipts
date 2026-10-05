@@ -323,7 +323,7 @@ export default function DashboardPage() {
           <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Link href="/" className={buttonVariants({ size: "lg" })}>
+          <Link href="/?upload=1" className={buttonVariants({ size: "lg" })}>
             <HugeiconsIcon icon={Upload04Icon} />
             {t("uploadReceipt")}
           </Link>

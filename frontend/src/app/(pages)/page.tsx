@@ -58,13 +58,24 @@ export default function ReceiptsPage() {
   );
 }
 
+function withoutUpload(query: string) {
+  const params = new URLSearchParams(query);
+  params.delete("upload");
+  return params.toString();
+}
+
 function ReceiptsPageContent() {
   const t = useTranslations("ReceiptsPage");
   const { me } = useMe();
   const [receipts, setReceipts] = useState<ReceiptPublic[] | null>(null);
   const [listError, setListError] = useState(false);
 
-  const [formOpen, setFormOpen] = useState(false);
+  const searchParams = useSearchParams();
+  // `?upload=1` (the mobile upload button) opens the create dialog, read like
+  // `?receipt=`; the replaceState effect below strips it again.
+  const [formOpen, setFormOpen] = useState(
+    () => searchParams.get("upload") === "1",
+  );
   const [editingReceipt, setEditingReceipt] = useState<
     ReceiptPublic | undefined
   >(undefined);
@@ -77,7 +88,6 @@ function ReceiptsPageContent() {
   // dashboard links here with a client-side navigation, and at first render
   // then window.location is not updated yet (the router's params are). Later
   // changes are mirrored out by the effect below, never read back in.
-  const searchParams = useSearchParams();
   // Filters follow the same pattern as `?receipt=`: read once here, mirrored
   // out by the effect below.
   const [filters, setFilters] = useState<Filters>(() =>
@@ -93,14 +103,29 @@ function ReceiptsPageContent() {
   // The last query this page wrote (or started with). When searchParams
   // differ from it, something else navigated here (sidebar "Receipts" link,
   // a dashboard link to "/") without remounting: re-read filters and detail.
-  const lastQuery = useRef(searchParams.toString());
+  // `upload` is consumed (and stripped from the URL) right here, independent
+  // of the list load, so a failed or slow load can't leave it behind: the next
+  // tap on the upload button would push an identical URL and open nothing.
+  // The initial value excludes it, so the effect also runs once on mount.
+  const lastQuery = useRef(withoutUpload(searchParams.toString()));
   const query = searchParams.toString();
   useEffect(() => {
     if (query === lastQuery.current) return;
-    lastQuery.current = query;
     const params = new URLSearchParams(query);
     setFilters(parseFilters(params));
     setDetailId(params.get("receipt"));
+    if (params.has("upload")) {
+      if (params.get("upload") === "1") openCreateDialog();
+      const next = withoutUpload(query);
+      lastQuery.current = next;
+      window.history.replaceState(
+        null,
+        "",
+        next ? `${window.location.pathname}?${next}` : window.location.pathname,
+      );
+    } else {
+      lastQuery.current = query;
+    }
   }, [query]);
   useEffect(() => {
     let cancelled = false;
@@ -178,6 +203,7 @@ function ReceiptsPageContent() {
 
     const params = new URLSearchParams(window.location.search);
     filtersToParams(filters, params);
+    params.delete("upload");
     if (detailReceipt) {
       params.set("receipt", detailReceipt.id);
     } else {
@@ -243,7 +269,7 @@ function ReceiptsPageContent() {
               : t("subtitleFallback")}
           </p>
         </div>
-        <Button size="lg" onClick={openCreateDialog}>
+        <Button size="lg" className="max-md:hidden" onClick={openCreateDialog}>
           <HugeiconsIcon icon={Upload04Icon} />
           {t("uploadReceipt")}
         </Button>

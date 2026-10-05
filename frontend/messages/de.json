@@ -34,7 +34,8 @@
     "errorPasswordRules": "Dieses Passwort erfüllt die Regeln nicht."
   },
   "AppShell": {
-    "toggleSidebar": "Seitenleiste ein-/ausblenden"
+    "accountMenu": "Kontomenü",
+    "mainNav": "Hauptnavigation"
   },
   "AppSidebar": {
     "workspace": "Arbeitsbereich",

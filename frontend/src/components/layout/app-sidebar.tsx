@@ -1,24 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  DashboardSquare01Icon,
-  Invoice01Icon,
-  Logout01Icon,
-  Moon01Icon,
-  Settings01Icon,
-  Sun01Icon,
-} from "@hugeicons/core-free-icons";
-
+import { AccountMenuItems } from "@/components/layout/account-menu";
+import { useNavItems } from "@/components/layout/nav-items";
 import { LogoMark } from "@/components/logo-mark";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,35 +25,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useTheme } from "@/hooks/use-theme";
-import { logout, setAccessToken, type Me } from "@/lib/api";
+import type { Me } from "@/lib/api";
 
 export function AppSidebar({ me }: { me: Me }) {
   const t = useTranslations("AppSidebar");
   const pathname = usePathname();
-  const router = useRouter();
-  const { dark, toggleTheme } = useTheme();
+  const navItems = useNavItems();
   const initials = me.email.slice(0, 2).toUpperCase();
-
-  // Order matches the ReceiptsDesktop mockup's Workspace group.
-  const navItems = [
-    {
-      href: "/dashboard",
-      label: t("navDashboard"),
-      icon: DashboardSquare01Icon,
-    },
-    { href: "/", label: t("navReceipts"), icon: Invoice01Icon },
-    { href: "/settings", label: t("navSettings"), icon: Settings01Icon },
-  ];
-
-  async function handleSignOut() {
-    try {
-      await logout();
-    } finally {
-      setAccessToken(null);
-      router.replace("/login");
-    }
-  }
 
   return (
     <Sidebar>
@@ -108,14 +78,7 @@ export function AppSidebar({ me }: { me: Me }) {
             }
           />
           <DropdownMenuContent align="start" side="top">
-            <DropdownMenuItem onClick={toggleTheme}>
-              <HugeiconsIcon icon={dark ? Sun01Icon : Moon01Icon} />
-              {t("toggleTheme")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleSignOut}>
-              <HugeiconsIcon icon={Logout01Icon} />
-              {t("signOut")}
-            </DropdownMenuItem>
+            <AccountMenuItems />
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>

@@ -34,7 +34,8 @@
     "errorPasswordRules": "This password doesn't meet the rules."
   },
   "AppShell": {
-    "toggleSidebar": "Toggle sidebar"
+    "accountMenu": "Account menu",
+    "mainNav": "Main"
   },
   "AppSidebar": {
     "workspace": "Workspace",

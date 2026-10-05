@@ -19,35 +19,28 @@ const ME = {
 };
 
 describe("AppShell", () => {
-  // jsdom applies no CSS, so a viewport width here would prove nothing: the
-  // trigger is in the DOM at every width and only `md:hidden` keeps it off
-  // desktop. Assert that class explicitly -- swapping it for plain `hidden`
-  // would silently leave mobile with no way to reach nav, theme or sign-out.
-  it("renders a sidebar trigger that is visible only below the md breakpoint", () => {
+  // jsdom applies no CSS: the bars are in the DOM at every width, and only
+  // `md:hidden` keeps them off desktop (where the sidebar takes over).
+  it("renders the mobile top bar and bottom nav, hidden from md up", () => {
     render(
       <AppShell me={ME}>
         <div>content</div>
       </AppShell>,
     );
 
-    const trigger = screen.getByRole("button", { name: /toggle sidebar/i });
-    expect(trigger).toBeInTheDocument();
-    expect(trigger).toHaveClass("md:hidden");
-  });
-
-  // Regression test: the trigger's accessible name must come from the
-  // translated aria-label, not the sr-only "Toggle Sidebar" span baked into
-  // the shadcn-generated SidebarTrigger -- otherwise a German-mode
-  // screen-reader user gets an English label on the only mobile nav control.
-  it("exposes the translated accessible name to assistive tech", () => {
-    render(
-      <AppShell me={ME}>
-        <div>content</div>
-      </AppShell>,
+    expect(screen.getByRole("navigation", { name: "Main" })).toHaveClass(
+      "md:hidden",
     );
-
+    // Outside <main>, so it is a real banner landmark (inside it would be
+    // a plain header; jsdom's role query alone can't tell).
+    const banner = screen.getByRole("banner");
+    expect(banner).toHaveClass("md:hidden");
+    expect(banner.closest("main")).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Toggle sidebar" }),
+      screen.getByRole("button", { name: "Account menu" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload receipt" })).toHaveClass(
+      "md:hidden",
+    );
   });
 });

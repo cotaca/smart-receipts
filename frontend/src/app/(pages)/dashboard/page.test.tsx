@@ -165,7 +165,7 @@ describe("DashboardPage", () => {
     expect(await screen.findByText("No receipts yet")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Upload receipt" }),
-    ).toHaveAttribute("href", "/");
+    ).toHaveAttribute("href", "/?upload=1");
   });
 
   it("shows an alert when loading fails", async () => {
