@@ -23,14 +23,12 @@ Landing-Page ist ein verschachteltes Bundle mit eigenem Manifest) und diese Date
 | Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05)) |
 | Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | gebaut: Suche über Händler/Positionen/Notizen, Zeitraum inkl. Custom range, Betrag, Dateityp, Chips, Monatsgruppen, URL-Filter, Filter-Sheet am Handy. Offen: Karten-Zeilen am Handy |
 | Mobile Bottom-Nav | v2 03, im Review | gebaut: Top-Bar (Logo, Avatar-Menü), Bottom-Nav mit 3 Einträgen, Upload als Floating Button (siehe Entscheidung 5) |
-| Registrierung mit Inline-Validierung | v2 03, im Review | Fehler nur vom Server, oben als Alert |
+| Registrierung mit Inline-Validierung | v2 03, im Review | gebaut: Regel-Checkliste, „Repeat password", E-Mail on blur, 409 am Feld mit „Log in instead", `?tab=register` öffnet den Tab |
 | Dashboard | v2-Datei = gebauter Stand | gebaut |
 | Upload-/Bearbeiten-Dialog | v2 `Screen-ReceiptForm` = gebauter Stand | gebaut |
 | Login, Detail, Löschen, Settings | v1 | gebaut |
 
 ### Was v2 an schon gebauten Screens ändert
-- **Login-Seite**: Tab „Create account" bekommt die Phase-3-Validierung und soll per
-  `?tab=register` direkt öffnen (Ziel der Landing-CTAs).
 - **Meta**: `og-image.png` (1200×630) und der Meta-Block aus Board 2c kommen mit der
   Landing-Page.
 
