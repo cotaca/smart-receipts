@@ -108,7 +108,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-8 py-7">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-8 py-7">
       <h1 className="text-lg font-semibold tracking-tight text-foreground">
         {t("title")}
       </h1>
@@ -288,7 +288,7 @@ export default function SettingsPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
       />
-    </main>
+    </div>
   );
 }
 

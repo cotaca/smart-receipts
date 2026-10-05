@@ -37,6 +37,11 @@ async function fillAndSubmit(email = "user@test.com", password = "hunter22") {
 }
 
 describe("LoginPage", () => {
+  it("has its own main landmark (it renders outside the app shell)", () => {
+    render(<LoginPage />);
+    expect(screen.getByRole("main")).toBeInTheDocument();
+  });
+
   it("defaults to login mode and switches to register on tab click", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);

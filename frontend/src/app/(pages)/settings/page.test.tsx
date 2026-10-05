@@ -51,6 +51,13 @@ beforeEach(() => {
 });
 
 describe("SettingsPage", () => {
+  it("leaves the main landmark to the app shell", () => {
+    // The shell's SidebarInset is the one <main>; a page's own would nest a
+    // second main landmark inside it (invalid HTML, two "main" landmarks).
+    renderSettings();
+    expect(screen.queryByRole("main")).toBeNull();
+  });
+
   it("renders the Appearance, Amounts and Account cards", () => {
     renderSettings();
 

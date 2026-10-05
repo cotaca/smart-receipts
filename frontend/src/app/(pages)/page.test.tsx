@@ -103,6 +103,14 @@ async function pickDate(
 }
 
 describe("ReceiptsPage", () => {
+  it("leaves the main landmark to the app shell", () => {
+    // The shell's SidebarInset is the one <main>; a page's own would nest a
+    // second main landmark inside it (invalid HTML, two "main" landmarks).
+    vi.spyOn(api, "listReceipts").mockResolvedValue([]);
+    renderPage();
+    expect(screen.queryByRole("main")).toBeNull();
+  });
+
   it("shows the empty state when there are no receipts", async () => {
     vi.spyOn(api, "listReceipts").mockResolvedValue([]);
 

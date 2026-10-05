@@ -39,6 +39,8 @@ describe("AppShell", () => {
     expect(
       screen.getByRole("button", { name: "Account menu" }),
     ).toBeInTheDocument();
+    // Exactly one main landmark per page: the shell's (pages render a div).
+    expect(screen.getAllByRole("main")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Upload receipt" })).toHaveClass(
       "md:hidden",
     );

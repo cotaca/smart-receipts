@@ -77,6 +77,13 @@ beforeEach(() => {
 });
 
 describe("DashboardPage", () => {
+  it("leaves the main landmark to the app shell", () => {
+    // The shell's SidebarInset is the one <main>; a page's own would nest a
+    // second main landmark inside it (invalid HTML, two "main" landmarks).
+    renderPage();
+    expect(screen.queryByRole("main")).toBeNull();
+  });
+
   it("formats the KPIs per number_format", async () => {
     const { unmount } = renderPage();
 

@@ -147,7 +147,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted p-6">
+    <main className="flex min-h-screen w-full items-center justify-center bg-muted p-6">
       <div className="flex w-full max-w-sm flex-col gap-5">
         <div className="flex flex-col items-center gap-2">
           <LogoMark className="size-9" />
@@ -355,7 +355,7 @@ function LoginForm() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

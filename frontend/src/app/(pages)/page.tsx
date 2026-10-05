@@ -253,7 +253,7 @@ function ReceiptsPageContent() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-8 py-7">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-8 py-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
@@ -413,6 +413,6 @@ function ReceiptsPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </div>
   );
 }

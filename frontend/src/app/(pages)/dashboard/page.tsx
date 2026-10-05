@@ -342,7 +342,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-7 md:px-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-7 md:px-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-lg font-semibold tracking-tight text-foreground">
           {t("title")}
@@ -365,6 +365,6 @@ export default function DashboardPage() {
         </Select>
       </div>
       {body}
-    </main>
+    </div>
   );
 }
