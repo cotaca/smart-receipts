@@ -73,7 +73,7 @@ describe("LoginPage", () => {
       expect(screen.getByText("Signed in")).toBeInTheDocument(),
     );
     expect(setAccessTokenSpy).toHaveBeenCalledWith("token");
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/"), {
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/receipts"), {
       timeout: 2000,
     });
   });

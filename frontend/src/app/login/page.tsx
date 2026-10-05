@@ -121,7 +121,7 @@ function LoginForm() {
         : await register(email, password);
       setAccessToken(access_token);
       setShowSuccess(true);
-      setTimeout(() => router.push("/"), 700);
+      setTimeout(() => router.push("/receipts"), 700);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setErrorMessage(t("errorInvalidCredentials"));

@@ -102,7 +102,7 @@ function ReceiptsPageContent() {
 
   // The last query this page wrote (or started with). When searchParams
   // differ from it, something else navigated here (sidebar "Receipts" link,
-  // a dashboard link to "/") without remounting: re-read filters and detail.
+  // a dashboard link to "/receipts") without remounting: re-read filters and detail.
   // `upload` is consumed (and stripped from the URL) right here, independent
   // of the list load, so a failed or slow load can't leave it behind: the next
   // tap on the upload button would push an identical URL and open nothing.

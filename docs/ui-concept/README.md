@@ -75,7 +75,7 @@ Button-Variante `size="touch"`), Display-Größen 36–58 px, FAQ als natives
 Vom Repo-Owner entschieden, noch nicht gebaut. Beim Bau wandert jede Entscheidung in
 die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
 
-1. **Landing auf `/`, Belegliste nach `/receipts`.** Sidebar-Links, Dashboard-Links
+1. *(Umzug der Liste nach `/receipts` gebaut, siehe `.claude/rules/frontend/shell-auth.md`; die Landing-Page auf `/` ist noch offen)* **Landing auf `/`, Belegliste nach `/receipts`.** Sidebar-Links, Dashboard-Links
    (`/?receipt=` → `/receipts?receipt=`) und Redirects nach Login ziehen mit um.
    Verworfen: `/welcome` (schlechtere Einstiegs-URL), `/` je nach Login-Status (Status
    ist erst im Client bekannt, verhindert serverseitiges Rendern).
@@ -89,7 +89,7 @@ die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
 5. *(gebaut, siehe `.claude/rules/frontend/shell-auth.md`)* **Bottom-Nav statt
    Sidebar-Sheet unter `md`** (Dashboard, Receipts, Settings; Konto per Avatar-Menü in
    der Top-Bar). Abweichung vom Board: Upload ist ein Floating Button rechts über der
-   Nav (öffnet `/?upload=1`), kein vierter Nav-Eintrag.
+   Nav (öffnet `/receipts?upload=1`), kein vierter Nav-Eintrag.
 6. *(gebaut: Listenfilter in der URL, siehe `.claude/rules/frontend/receipts-list.md`)*
 7. *(gebaut: `size="touch"`, siehe `.claude/rules/frontend/ui.md`)*
 8. **FAQ als natives `details/summary`**, kein Accordion.

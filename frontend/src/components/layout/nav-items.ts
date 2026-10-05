@@ -15,7 +15,7 @@ export function useNavItems() {
       label: t("navDashboard"),
       icon: DashboardSquare01Icon,
     },
-    { href: "/", label: t("navReceipts"), icon: Invoice01Icon },
+    { href: "/receipts", label: t("navReceipts"), icon: Invoice01Icon },
     { href: "/settings", label: t("navSettings"), icon: Settings01Icon },
   ];
 }

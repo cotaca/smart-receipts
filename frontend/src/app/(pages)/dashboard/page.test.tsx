@@ -172,7 +172,7 @@ describe("DashboardPage", () => {
     expect(await screen.findByText("No receipts yet")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Upload receipt" }),
-    ).toHaveAttribute("href", "/?upload=1");
+    ).toHaveAttribute("href", "/receipts?upload=1");
   });
 
   it("shows an alert when loading fails", async () => {
@@ -188,6 +188,6 @@ describe("DashboardPage", () => {
     renderPage();
 
     const link = await screen.findByRole("link", { name: /REWE Markt/ });
-    expect(link).toHaveAttribute("href", "/?receipt=r1");
+    expect(link).toHaveAttribute("href", "/receipts?receipt=r1");
   });
 });

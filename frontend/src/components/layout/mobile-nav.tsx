@@ -98,11 +98,11 @@ export function UploadFab() {
     // list strips `upload` again with replaceState, which would otherwise
     // leave two identical history entries.
     const params = new URLSearchParams(
-      pathname === "/" ? window.location.search : "",
+      pathname === "/receipts" ? window.location.search : "",
     );
     params.set("upload", "1");
-    const url = `/?${params.toString()}`;
-    if (pathname === "/") router.replace(url);
+    const url = `/receipts?${params.toString()}`;
+    if (pathname === "/receipts") router.replace(url);
     else router.push(url);
   }
 

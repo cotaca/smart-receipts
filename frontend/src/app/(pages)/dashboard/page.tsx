@@ -236,7 +236,10 @@ function DashboardContent({
         <CardHeader>
           <CardTitle>{t("recentTitle")}</CardTitle>
           <CardAction>
-            <Link href="/" className="text-xs font-medium text-foreground">
+            <Link
+              href="/receipts"
+              className="text-xs font-medium text-foreground"
+            >
               {t("viewAll")}
             </Link>
           </CardAction>
@@ -245,7 +248,7 @@ function DashboardContent({
           {data.recent.map((r) => (
             <Link
               key={r.id}
-              href={`/?receipt=${r.id}`}
+              href={`/receipts?receipt=${r.id}`}
               className="flex items-center gap-3 border-t border-border py-2 text-xs first:border-t-0 hover:bg-muted"
             >
               <span className="min-w-0 flex-1 truncate font-medium">
@@ -323,7 +326,10 @@ export default function DashboardPage() {
           <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Link href="/?upload=1" className={buttonVariants({ size: "lg" })}>
+          <Link
+            href="/receipts?upload=1"
+            className={buttonVariants({ size: "lg" })}
+          >
             <HugeiconsIcon icon={Upload04Icon} />
             {t("uploadReceipt")}
           </Link>

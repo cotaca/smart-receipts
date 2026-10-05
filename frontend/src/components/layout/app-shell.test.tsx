@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
+  usePathname: () => "/receipts",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

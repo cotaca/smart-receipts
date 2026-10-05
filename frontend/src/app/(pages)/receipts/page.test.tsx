@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "@/lib/api";
 import type { Me, ReceiptExtraction, ReceiptPublic } from "@/lib/api";
 import { MeProvider } from "@/lib/me-context";
-import enMessages from "../../../messages/en.json";
+import enMessages from "../../../../messages/en.json";
 
 import ReceiptsPage from "./page";
 
@@ -72,7 +72,7 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.spyOn(api, "getReceiptImageObjectUrl").mockResolvedValue("blob:fake-url");
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", "/receipts");
   navSearch = null;
 });
 
@@ -415,7 +415,7 @@ describe("ReceiptsPage", () => {
     });
 
     it("reads the initial filters from the URL", async () => {
-      window.history.replaceState(null, "", "/?q=rewe&type=image");
+      window.history.replaceState(null, "", "/receipts?q=rewe&type=image");
       await renderLoaded(milk, pdf);
 
       expect(screen.getByPlaceholderText(SEARCH)).toHaveValue("rewe");
@@ -444,7 +444,7 @@ describe("ReceiptsPage", () => {
     });
 
     it("re-reads the filters when an outside navigation changes the URL", async () => {
-      window.history.replaceState(null, "", "/?type=pdf");
+      window.history.replaceState(null, "", "/receipts?type=pdf");
       vi.spyOn(api, "listReceipts").mockResolvedValue([milk, pdf]);
       const { rerender } = renderPage();
       await waitFor(() =>
@@ -562,7 +562,7 @@ describe("ReceiptsPage", () => {
         window.history.replaceState(
           null,
           "",
-          "/?period=custom&from=2026-09-01&to=2026-09-30",
+          "/receipts?period=custom&from=2026-09-01&to=2026-09-30",
         );
         await renderLoaded(milk, pdf);
 
@@ -626,7 +626,7 @@ describe("ReceiptsPage", () => {
       window.history.replaceState(
         null,
         "",
-        "/?period=custom&from=2026-09-01&to=2026-09-10",
+        "/receipts?period=custom&from=2026-09-01&to=2026-09-10",
       );
       const user = userEvent.setup();
       await renderLoaded(milk, pdf);
@@ -699,7 +699,7 @@ describe("ReceiptsPage", () => {
       window.history.replaceState(
         null,
         "",
-        "/?period=custom&from=2026-09-01&to=2026-09-30",
+        "/receipts?period=custom&from=2026-09-01&to=2026-09-30",
       );
       await renderLoaded(milk, pdf);
 
@@ -1047,7 +1047,7 @@ describe("ReceiptsPage", () => {
   });
 
   it("opens the detail dialog on mount from a ?receipt= URL", async () => {
-    window.history.replaceState(null, "", "/?receipt=r1");
+    window.history.replaceState(null, "", "/receipts?receipt=r1");
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
 
     renderPage();
@@ -1069,7 +1069,7 @@ describe("ReceiptsPage", () => {
   });
 
   it("opens the upload dialog on mount from ?upload=1 and strips it from the URL", async () => {
-    window.history.replaceState(null, "", "/?upload=1&q=rewe");
+    window.history.replaceState(null, "", "/receipts?upload=1&q=rewe");
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
 
     renderPage();
@@ -1081,7 +1081,7 @@ describe("ReceiptsPage", () => {
   });
 
   it("opens the upload dialog when an outside navigation adds ?upload=1, keeping filters", async () => {
-    window.history.replaceState(null, "", "/?q=trader");
+    window.history.replaceState(null, "", "/receipts?q=trader");
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
     const { rerender } = renderPage();
     await waitFor(() =>
@@ -1106,7 +1106,7 @@ describe("ReceiptsPage", () => {
   });
 
   it("consumes ?upload=1 even when the list never loads, so a second tap reopens the dialog", async () => {
-    window.history.replaceState(null, "", "/?upload=1");
+    window.history.replaceState(null, "", "/receipts?upload=1");
     vi.spyOn(api, "listReceipts").mockRejectedValue(new Error("down"));
     const user = userEvent.setup();
     const { rerender } = renderPage();
@@ -1162,7 +1162,7 @@ describe("ReceiptsPage", () => {
   });
 
   it("does not open a dialog and strips an unknown ?receipt= id", async () => {
-    window.history.replaceState(null, "", "/?receipt=does-not-exist");
+    window.history.replaceState(null, "", "/receipts?receipt=does-not-exist");
     vi.spyOn(api, "listReceipts").mockResolvedValue([RECEIPT]);
 
     renderPage();

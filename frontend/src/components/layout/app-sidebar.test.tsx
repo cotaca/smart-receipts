@@ -37,7 +37,7 @@ describe("AppSidebar", () => {
     const settingsLink = screen.getByRole("link", { name: /Settings/ });
 
     expect(dashboardLink).toHaveAttribute("href", "/dashboard");
-    expect(receiptsLink).toHaveAttribute("href", "/");
+    expect(receiptsLink).toHaveAttribute("href", "/receipts");
     expect(settingsLink).toHaveAttribute("href", "/settings");
 
     // usePathname is mocked to "/dashboard" — only that item should be active.

@@ -26,7 +26,7 @@ const ME = {
 
 beforeEach(() => {
   pathname = "/dashboard";
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", "/receipts");
 });
 
 afterEach(() => {
@@ -57,22 +57,23 @@ describe("MobileBottomNav", () => {
 
 describe("UploadFab", () => {
   it("opens the list's upload dialog from another page", async () => {
+    window.history.replaceState(null, "", "/receipts?q=milch");
     render(<UploadFab />);
     await userEvent.click(
       screen.getByRole("button", { name: "Upload receipt" }),
     );
-    expect(push).toHaveBeenCalledWith("/?upload=1");
+    expect(push).toHaveBeenCalledWith("/receipts?upload=1");
     expect(replace).not.toHaveBeenCalled();
   });
 
   it("keeps the list's filters", async () => {
-    pathname = "/";
-    window.history.replaceState(null, "", "/?q=milch");
+    pathname = "/receipts";
+    window.history.replaceState(null, "", "/receipts?q=milch");
     render(<UploadFab />);
     await userEvent.click(
       screen.getByRole("button", { name: "Upload receipt" }),
     );
-    expect(replace).toHaveBeenCalledWith("/?q=milch&upload=1");
+    expect(replace).toHaveBeenCalledWith("/receipts?q=milch&upload=1");
     expect(push).not.toHaveBeenCalled();
   });
 });

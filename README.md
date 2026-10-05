@@ -104,7 +104,8 @@ CI (GitHub Actions) runs on every change: lint + migrations + tests for `backend
 /frontend    Next.js app (TypeScript, App Router)
   /src
     /app         /login, plus the (pages) route group — a Next.js route group, so it
-                 adds no URL segment: / (receipts), /dashboard, /settings. Everything
+                 adds no URL segment: /receipts, /dashboard, /settings (/ is a
+                 transition redirect to /receipts, app/page.tsx). Everything
                  in it shares one sidebar shell and one auth guard
     /components  /ui = shadcn-generated, /receipts = receipt feature, /dashboard = spend chart,
                  /layout = sidebar shell
