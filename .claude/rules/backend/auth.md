@@ -10,7 +10,7 @@ paths:
 
 Custom JWT via FastAPI; no auth service, no OAuth for the MVP.
 
-- bcrypt directly, no `passlib` (incompatible with bcrypt>=4.1). bcrypt silently truncates at 72 bytes, so `NewPassword` (`schemas/auth.py`) rejects longer passwords with 422 wherever a password is *set* (register, change-password). Deliberately not on login or `current_password`: older accounts may hold a longer password and must still get in. No minimum length yet; the v2 register design proposes 8 (open question 4 in `docs/ui-concept/README.md`).
+- bcrypt directly, no `passlib` (incompatible with bcrypt>=4.1). bcrypt silently truncates at 72 bytes, so `NewPassword` (`schemas/auth.py`) rejects longer passwords with 422 wherever a password is *set* (register, change-password). Deliberately not on login or `current_password`: older accounts may hold a longer password and must still get in. No minimum length yet; the v2 register design proposes 8 — decided, not built yet (decision 4 in `docs/ui-concept/README.md`).
 - JWT (`pyjwt`) carries `sub`, `exp`, `type`; `type` (`access`/`refresh`) stops a refresh token being replayed as an access token.
 - Access token: 15 min, in the response body, kept in memory by the frontend (never localStorage). Refresh token: 7 days, httpOnly + secure + samesite=lax cookie, never in JSON.
 - Stateless: no refresh-token table. Logout only clears the cookie, and change-password invalidates nothing — a stolen token lives until expiry. Don't write a test asserting this "works". The endpoint docstring states it too; revisit both together if a `refresh_tokens` table (rotate-on-use) is ever built.

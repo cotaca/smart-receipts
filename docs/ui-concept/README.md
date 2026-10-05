@@ -20,7 +20,7 @@ Landing-Page ist ein verschachteltes Bundle mit eigenem Manifest) und diese Date
 | Bereich | Design | Code |
 |---|---|---|
 | Logo | v2 01, final | nicht gebaut — überall noch die `Invoice01Icon`-Kachel, Next-Default-`favicon.ico` |
-| Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Offene Fragen](#offene-fragen)) |
+| Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05)) |
 | Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | Suche nur Händler; Zeitraum + Sortierung, keine URL-Parameter |
 | Mobile Bottom-Nav | v2 03, im Review | Sidebar als Offcanvas-Sheet |
 | Registrierung mit Inline-Validierung | v2 03, im Review | Fehler nur vom Server, oben als Alert |
@@ -70,51 +70,43 @@ Button-Variante `size="touch"`), Display-Größen 36–58 px, FAQ als natives
 - **`Screen-Register`** (`state` empty/typing/invalid/toolong/taken/loading/generic, `mobile`) —
   Inline-Validierung für „Create account": Passwort-Hinweis vor dem Tippen, E-Mail
   on blur, 72-Byte-Limit clientseitig, 409 am E-Mail-Feld mit „Log in instead".
-  Mindestlänge 8: siehe [Offene Fragen](#offene-fragen) Nr. 4.
+  Mindestlänge 8: entschieden, siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05) Nr. 4.
 - Die neuen EN/DE-Strings, Verhalten und Abweichungen listet das Board im Review-Block von 03.
 
 ### Weitere v2-Dateien
 - `Screen-Dashboard` — ersetzt die v1-Datei; DS-Version des gebauten Dashboards (`chrome`, `state` filled/empty/loading/error).
 - `Screen-ReceiptForm` — DS-Version des gebauten Upload-Dialogs (`state` empty/scanning/review/lowquality/pdf/edit), im Board nur als Landing-Vorschau.
 
-## Offene Fragen
+## Entscheidungen zu v2 (2026-10-05)
 
-Entscheidungen, bevor v2 gebaut wird. Jeweils mit Empfehlung und Preis.
+Vom Repo-Owner entschieden, noch nicht gebaut. Beim Bau wandert jede Entscheidung in
+die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
 
-1. **Route der Landing-Page.** `/` ist heute die Belegliste hinter dem Auth-Guard
-   (`(pages)/page.tsx`), Landing und App kollidieren. *Empfehlung:* Landing auf `/`,
-   Liste nach `/receipts`. *Preis:* Sidebar-Links, Dashboard-Links (`/?receipt=`) und
-   Redirects nach Login ändern sich. Alternative `/welcome` lässt die App unberührt, ist
-   aber die schlechtere Einstiegs-URL.
-2. **Landing serverseitig rendern.** Alle App-Seiten sind Client-Komponenten; Meta-Block
-   und og:image brauchen eine Server-Komponente mit `metadata`. *Empfehlung:* Landing als
-   eigene Route außerhalb von `(pages)`, ohne Auth-Guard. Sprache ohne Konto kommt schon
-   heute aus Locale-Cookie bzw. `Accept-Language` (`src/i18n/request.ts`); der EN/DE-Schalter
-   muss nur den Cookie setzen.
-3. **Impressum und Datenschutz.** Board: verlinkt, Seiten out of scope. Eine öffentliche
-   Seite in DE braucht beide. *Empfehlung:* vor dem Livegang der Landing anlegen,
-   Inhalt liefert der Betreiber.
-4. **Passwort-Mindestlänge 8.** Heute prüft `NewPassword` nur das 72-Byte-Maximum.
-   *Empfehlung:* ja, in `NewPassword` — gilt dann für Registrierung und
-   Passwortwechsel; Login bleibt ungeprüft, alte kurze Passwörter kommen weiter rein.
-   *Preis:* kleine Backend-Änderung + Tests. Ohne sie lautet der Hinweis „at most 72".
-5. **Bottom-Nav statt Sidebar-Sheet unter `md`.** Kehrt die Entscheidung in
-   `.claude/rules/frontend/shell-auth.md` um (genau ein `SidebarTrigger`, Konto nur im
-   Sidebar-Footer). *Empfehlung:* übernehmen — Upload ist am Handy der Haupt-Use-Case.
-   *Preis:* neue `MobileNav`, Konto-Menü doppelt (Sidebar + Top-Bar), Safe-Area-Padding.
-6. **Filter in der URL.** Kehrt „keine Query-Params" in
-   `.claude/rules/frontend/receipts-list.md` um. *Empfehlung:* übernehmen, gleiches
-   Muster wie `?receipt=` (`replaceState`, nur beim Start lesen). Filtern bleibt
-   clientseitig.
-7. **44-px-Touch-Targets.** Board schlägt eine Variante `size="touch"` für Button/Input
-   vor. *Empfehlung:* Variante in `button.tsx`/`input.tsx` statt Inline-Overrides an
-   jeder Stelle; wie `Alert variant="warning"` nach jedem Regenerieren wieder ergänzen.
-8. **FAQ: Accordion oder `details/summary`.** *Empfehlung:* `details/summary` lassen —
-   zugänglich, kein JS, kein neues Primitive.
-9. **Logo-Assets.** Board-Notiz: Hero-Belegtext vor SVG-Export in Pfade wandeln.
-   *Empfehlung:* SVGs aus Claude Design exportieren und hier ablegen, statt sie aus
-   `Logo-Mark.html` abzuschreiben; dann `favicon.ico` und die Next-SVGs in `public/`
-   ersetzen.
+1. **Landing auf `/`, Belegliste nach `/receipts`.** Sidebar-Links, Dashboard-Links
+   (`/?receipt=` → `/receipts?receipt=`) und Redirects nach Login ziehen mit um.
+   Verworfen: `/welcome` (schlechtere Einstiegs-URL), `/` je nach Login-Status (Status
+   ist erst im Client bekannt, verhindert serverseitiges Rendern).
+2. **Landing serverseitig gerendert**, eigene Route außerhalb von `(pages)`, ohne
+   Auth-Guard, mit `metadata` (Meta-Block + og:image aus Board 2c). Sprache ohne Konto
+   kommt schon heute aus Locale-Cookie bzw. `Accept-Language` (`src/i18n/request.ts`);
+   der EN/DE-Schalter setzt nur den Cookie.
+3. **`/impressum` und `/datenschutz` als einfache Server-Seiten mit Platzhaltern.** Den
+   Text liefert der Betreiber; die Landing geht erst live, wenn er drin ist.
+4. **Passwort mindestens 8 Zeichen**, in `NewPassword` (Registrierung und
+   Passwortwechsel). Login bleibt ungeprüft, ältere kurze Passwörter funktionieren weiter.
+5. **Bottom-Nav statt Sidebar-Sheet unter `md`**, wie im Board (Dashboard, Receipts,
+   Upload, Settings; Konto per Avatar-Menü in der Top-Bar). Ersetzt beim Bau die
+   Shell-Regel in `.claude/rules/frontend/shell-auth.md`.
+6. **Listenfilter in der URL** via `replaceState`, gleiches Muster wie `?receipt=` (beim
+   Start lesen, danach nur schreiben). Filtern bleibt clientseitig. Ersetzt beim Bau
+   „keine Query-Params" in `.claude/rules/frontend/receipts-list.md`.
+7. **`size="touch"`-Variante** (44 px unter 640 px) in `button.tsx` und `input.tsx`, nicht
+   als Inline-Klassen. Wie `Alert variant="warning"` nach jedem shadcn-Regenerieren
+   wieder ergänzen.
+8. **FAQ als natives `details/summary`**, kein Accordion.
+9. **Logo-SVGs aus `screens/Logo-Mark.html` übernehmen** (Richtung A, alle Größen),
+   kein separater Export. Den Hero-Bon mit Pfaden statt Live-Text beim Landing-Bau
+   erzeugen. `favicon.ico` und die ungenutzten Next-SVGs in `public/` ersetzen bzw. löschen.
 
 ## Design-Vorgaben des Exports
 

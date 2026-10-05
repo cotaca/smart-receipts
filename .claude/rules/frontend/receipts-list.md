@@ -8,7 +8,7 @@ paths:
 
 # Receipts list, table, image cache
 
-- Filters (merchant search, period, sort) are `useMemo` over the loaded array — no query params, no debounce, native `Date`. The v2 design puts filters in the URL — not decided yet (open question 6 in `docs/ui-concept/README.md`). Period defaults to `all`, not the mockup's "this month", so older receipts don't look lost.
+- Filters (merchant search, period, sort) are `useMemo` over the loaded array — no query params, no debounce, native `Date`. The v2 design puts filters in the URL — decided, not built yet (decision 6 in `docs/ui-concept/README.md`). Period defaults to `all`, not the mockup's "this month", so older receipts don't look lost.
 - The summary line is the account-wide total, independent of filters, and is hidden when currencies are mixed (no wrong sum). Its amount is pre-formatted by `formatAmount` and passed into an ICU plural message via `t.rich()`, keeping the `<mono>` span inside the sentence.
 - Delete uses an `AlertDialog` with a preview row: thumbnail, merchant, mono `date · amount currency`.
 - **PDF rows**: a PDF receipt shows a static PDF icon tile (`ReceiptImage pdf`) instead of a thumbnail and never fetches the file — no full PDF download per table row. PDF rows have no hover preview at all (an enlarged icon adds nothing); the `HoverCard` still wraps the row, only its content is skipped (there's no thumbnail endpoint either way, see `.claude/rules/backend/receipts-api.md`).
