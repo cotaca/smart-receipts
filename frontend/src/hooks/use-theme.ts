@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "theme";
+export const THEME_STORAGE_KEY = "theme";
 
 export type ThemeMode = "light" | "dark" | "system";
 
@@ -12,7 +12,7 @@ function applyTheme(dark: boolean) {
 // "system" value written to localStorage, removing the key *is* how the
 // mode returns to following the OS setting.
 function getModeSnapshot(): ThemeMode {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
   return stored === "dark" || stored === "light" ? stored : "system";
 }
 
@@ -69,9 +69,9 @@ export function useTheme() {
 
   const setTheme = useCallback((next: ThemeMode) => {
     if (next === "system") {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(THEME_STORAGE_KEY);
     } else {
-      localStorage.setItem(STORAGE_KEY, next);
+      localStorage.setItem(THEME_STORAGE_KEY, next);
     }
     // localStorage writes don't fire "storage" in the same tab that made
     // them, so useSyncExternalStore would miss this -- dispatch it manually.

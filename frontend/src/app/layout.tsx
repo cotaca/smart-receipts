@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
+import { THEME_INIT_SCRIPT, ThemeSync } from "@/components/theme-sync";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -32,8 +33,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
 
   return (
+    // suppressHydrationWarning: THEME_INIT_SCRIPT adds the "dark" class before
+    // hydration, so the server-rendered className legitimately differs.
     <html
       lang={locale}
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -43,7 +47,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         inter.variable,
       )}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
+        <ThemeSync />
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
