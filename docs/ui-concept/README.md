@@ -21,7 +21,7 @@ Landing-Page ist ein verschachteltes Bundle mit eigenem Manifest) und diese Date
 |---|---|---|
 | Logo | v2 01, final | gebaut: `LogoMark` in Sidebar und Login, Favicon, Apple-Touch-Icon. Hero-Bon der Landing fehlt noch |
 | Landing-Page | v2 02, freigegeben | nicht gebaut, keine öffentliche Route (siehe [Entscheidungen](#entscheidungen-zu-v2-2026-10-05)) |
-| Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | Suche nur Händler; Zeitraum + Sortierung, keine URL-Parameter |
+| Belegliste mit Filtern, Monatsgruppen | v2 03, im Review | gebaut: Suche über Händler/Positionen/Notizen, Zeitraum inkl. Custom range, Betrag, Dateityp, Chips, Monatsgruppen, URL-Filter, Filter-Sheet am Handy. Offen: Karten-Zeilen am Handy, Bottom-Nav |
 | Mobile Bottom-Nav | v2 03, im Review | Sidebar als Offcanvas-Sheet |
 | Registrierung mit Inline-Validierung | v2 03, im Review | Fehler nur vom Server, oben als Alert |
 | Dashboard | v2-Datei = gebauter Stand | gebaut |
@@ -68,6 +68,7 @@ Button-Variante `size="touch"`), Display-Größen 36–58 px, FAQ als natives
   on blur, 72-Byte-Limit clientseitig, 409 am E-Mail-Feld mit „Log in instead".
   **Gebaut** (`login/page.tsx`): statt der einen Hinweiszeile eine Regel-Checkliste
   (8 Zeichen, Groß-, Kleinbuchstabe, Ziffer, Sonderzeichen), dazu „Repeat password".
+- **Gebaut, abweichend vom Board** (`Screen-ReceiptsList`): Zeitraum als ein Popover mit Presets und Range-Kalender statt Select + eigener Range-Button; Betrag-Button zeigt immer „Amount" (Aktiv-Punkt, Werte nur im Chip); Chip-/Ergebniszeile immer sichtbar, einzeilig; Filter-Sheet bis `lg` statt `sm`; Tabelle mit festen Spalten. Grund: Größen hängen nur vom Breakpoint ab, nichts springt mit dem Inhalt.
 - Die neuen EN/DE-Strings, Verhalten und Abweichungen listet das Board im Review-Block von 03.
 
 ### Weitere v2-Dateien
@@ -93,9 +94,7 @@ die Regel ihres Bereichs (`.claude/rules/`), dann hier streichen.
 5. **Bottom-Nav statt Sidebar-Sheet unter `md`**, wie im Board (Dashboard, Receipts,
    Upload, Settings; Konto per Avatar-Menü in der Top-Bar). Ersetzt beim Bau die
    Shell-Regel in `.claude/rules/frontend/shell-auth.md`.
-6. **Listenfilter in der URL** via `replaceState`, gleiches Muster wie `?receipt=` (beim
-   Start lesen, danach nur schreiben). Filtern bleibt clientseitig. Ersetzt beim Bau
-   „keine Query-Params" in `.claude/rules/frontend/receipts-list.md`.
+6. *(gebaut: Listenfilter in der URL, siehe `.claude/rules/frontend/receipts-list.md`)*
 7. *(gebaut: `size="touch"`, siehe `.claude/rules/frontend/ui.md`)*
 8. **FAQ als natives `details/summary`**, kein Accordion.
 ## Design-Vorgaben des Exports
